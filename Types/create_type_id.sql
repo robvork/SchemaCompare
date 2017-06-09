@@ -1,0 +1,4 @@
+DROP TYPE IF EXISTS [config].[ID];
+
+CREATE TYPE [config].[ID]
+FROM INT; 

@@ -34,122 +34,180 @@ possibly on different SQL Server instances. (Let's focus on the one SQL Server i
 	EXCEPT SQL logic
 */
 
-USE master; 
+--USE master; 
 
-IF EXISTS(SELECT * FROM sys.databases WHERE [name] = 'SchemaCompare')
-	DROP DATABASE SchemaCompare; 
+--DROP DATABASE IF EXISTS SchemaCompare; 
 
-CREATE DATABASE SchemaCompare; 
-GO
-
-USE SchemaCompare;
-GO
+--CREATE DATABASE SchemaCompare; 
+--GO
 
 -- What databases are we comparing?
-DROP TABLE IF EXISTS dbo.[database];
+--DROP TABLE IF EXISTS [instance].[database];
 
-CREATE TABLE dbo.[database]
-(
-	[database_id] INT NOT NULL 
-,	[database_name] SYSNAME NOT NULL
-,	CONSTRAINT pk_ref_db PRIMARY KEY([database_id])
-);
+--CREATE TABLE [instance].[database]
+--(
+--	[database_id] INT NOT NULL 
+--,	[database_name] SYSNAME NOT NULL
+--,	CONSTRAINT pk_ref_db PRIMARY KEY([database_id])
+--);
 
 -- What are the names of the schemas in each database?
--- The 'o_' prefix is prepended to tables which support object level comparisons
+-- The 's_' prefix is prepended to tables which support object level comparisons
 
-DROP TABLE IF EXISTS dbo.[o_schema];
+--DROP TABLE IF EXISTS dbo.[s_schema];
 
-CREATE TABLE dbo.o_schema
-(
-	[database_id] INT NOT NULL
-,	[schema_name] SYSNAME NOT NULL
-,	CONSTRAINT pk_o_schema PRIMARY KEY([database_id], [schema_name])
-,	CONSTRAINT fk_o_schema_2_ref_db FOREIGN KEY ([database_id])
-		REFERENCES dbo.[database]([database_id])
-		ON DELETE CASCADE
-		ON UPDATE CASCADE 
-)
+--CREATE TABLE dbo.s_schema
+--(
+--	[database_id] INT NOT NULL
+--,	[schema_name] SYSNAME NOT NULL
+--,	CONSTRAINT pk_s_schema PRIMARY KEY([database_id], [schema_name])
+--,	CONSTRAINT fk_s_schema_2_ref_db FOREIGN KEY ([database_id])
+--		REFERENCES dbo.[database]([database_id])
+--		ON DELETE CASCADE
+--		ON UPDATE CASCADE 
+--)
 
 -- What are the names of the tables within each database schema?
--- The 'o_' prefix is prepended to tables which support object level comparisons
-DROP TABLE IF EXISTS dbo.[o_table];
+-- The 's_' prefix is prepended to tables which support object level comparisons
+--DROP TABLE IF EXISTS dbo.[s_table];
 
-CREATE TABLE dbo.o_table
-(
-	[database_id] INT NOT NULL
-,   [schema_name] SYSNAME NOT NULL
-,	[table_name] SYSNAME NOT NULL 
-,	CONSTRAINT pk_o_table PRIMARY KEY([database_id], [table_name])
-,	CONSTRAINT fk_o_table_2_ref_db FOREIGN KEY ([database_id])
-		REFERENCES dbo.[database]([database_id])
-		ON DELETE CASCADE
-		ON UPDATE CASCADE 
-);
+--CREATE TABLE dbo.s_table
+--(
+--	[database_id] INT NOT NULL
+--,   [schema_name] SYSNAME NOT NULL
+--,	[table_name] SYSNAME NOT NULL 
+--,	CONSTRAINT pk_s_table PRIMARY KEY([database_id], [table_name])
+--,	CONSTRAINT fk_s_table_2_ref_db FOREIGN KEY ([database_id])
+--		REFERENCES dbo.[database]([database_id])
+--		ON DELETE CASCADE
+--		ON UPDATE CASCADE 
+--);
+
+--DROP TABLE IF EXISTS dbo.s_table_column;
+
+--CREATE TABLE dbo.s_table_column
+--(
+--	[database_id] INT NOT NULL
+--,   [schema_name] SYSNAME NOT NULL
+--,	[table_name] SYSNAME NOT NULL 
+--,	[column_name] SYSNAME NOT NULL
+--,	CONSTRAINT 
+--		pk_s_table_column 
+--	PRIMARY KEY
+--	(
+--		[database_id]
+--	,	[schema_name]
+--	,	[table_name]
+--	,	[column_name]
+--	)
+--,	CONSTRAINT fk_s_table_column_2_ref_db 
+--	FOREIGN KEY 
+--	(	
+--		[database_id]
+--	)
+--	REFERENCES 
+--		[instance].[database]
+--	(
+--		[database_id]
+--	)
+--	ON DELETE CASCADE
+--	ON UPDATE CASCADE 
+--);
 
 -- What are the names of the user-defined data types within each database schema?
--- The 'o_' prefix is prepended to tables which support object level comparisons
-DROP TABLE IF EXISTS dbo.[o_uddt];
+-- The 's_' prefix is prepended to tables which support object level comparisons
+--DROP TABLE IF EXISTS dbo.[s_uddt];
 
-CREATE TABLE dbo.o_uddt
-(
-	[database_id] INT NOT NULL
-,   [schema_name] SYSNAME NOT NULL
-,	[uddt_name] SYSNAME NOT NULL 
-,	CONSTRAINT pk_o_uddt PRIMARY KEY([database_id], [uddt_name])
-,	CONSTRAINT fk_o_uddt_2_ref_db FOREIGN KEY ([database_id])
-		REFERENCES dbo.[database]([database_id])
-		ON DELETE CASCADE
-		ON UPDATE CASCADE 
-);
+--CREATE TABLE dbo.s_uddt
+--(
+--	[database_id] INT NOT NULL
+--,   [schema_name] SYSNAME NOT NULL
+--,	[uddt_name] SYSNAME NOT NULL 
+--,	CONSTRAINT pk_s_uddt PRIMARY KEY([database_id], [schema_name], [uddt_name])
+--,	CONSTRAINT fk_s_uddt_2_ref_db FOREIGN KEY ([database_id])
+--		REFERENCES [instance].[database]([database_id])
+--		ON DELETE CASCADE
+--		ON UPDATE CASCADE 
+--);
 
 -- What are the names of the procedures within each database schema?
--- The 'o_' prefix is prepended to tables which support object level comparisons
-DROP TABLE IF EXISTS dbo.[o_proc];
+-- The 's_' prefix is prepended to tables which support object level comparisons
+--DROP TABLE IF EXISTS dbo.[s_proc];
 
-CREATE TABLE dbo.o_proc
-(
-	[database_id] INT NOT NULL
-,   [schema_name] SYSNAME NOT NULL
-,	[proc_name] SYSNAME NOT NULL 
-,	CONSTRAINT pk_o_proc PRIMARY KEY([database_id], [proc_name])
-,	CONSTRAINT fk_o_proc_2_ref_db FOREIGN KEY ([database_id])
-		REFERENCES dbo.[database]([database_id])
-		ON DELETE CASCADE
-		ON UPDATE CASCADE 
-);
+--CREATE TABLE dbo.s_proc
+--(
+--	[database_id] INT NOT NULL
+--,   [schema_name] SYSNAME NOT NULL
+--,	[proc_name] SYSNAME NOT NULL 
+--,	CONSTRAINT pk_s_proc PRIMARY KEY([database_id], [schema_name], [proc_name])
+--,	CONSTRAINT fk_s_proc_2_ref_db FOREIGN KEY ([database_id])
+--		REFERENCES [instance].[database]([database_id])
+--		ON DELETE CASCADE
+--		ON UPDATE CASCADE 
+--);
 
 -- What are the names of the functions within each database schema?
--- The 'o_' prefix is prepended to tables which support object level comparisons
-DROP TABLE IF EXISTS dbo.[o_func];
+-- The 's_' prefix is prepended to tables which support object level comparisons
+--DROP TABLE IF EXISTS dbo.[s_func];
 
-CREATE TABLE dbo.o_func
-(
-	[database_id] INT NOT NULL
-,   [schema_name] SYSNAME NOT NULL
-,	[func_name] SYSNAME NOT NULL 
-,	CONSTRAINT pk_o_func PRIMARY KEY([database_id], [func_name])
-,	CONSTRAINT fk_o_func_2_ref_db FOREIGN KEY ([database_id])
-		REFERENCES dbo.[database]([database_id])
-		ON DELETE CASCADE
-		ON UPDATE CASCADE 
-);
+--CREATE TABLE dbo.s_func
+--(
+--	[database_id] INT NOT NULL
+--,   [schema_name] SYSNAME NOT NULL
+--,	[func_name] SYSNAME NOT NULL 
+--,	CONSTRAINT pk_s_func PRIMARY KEY([database_id], [schema_name], [func_name])
+--,	CONSTRAINT fk_s_func_2_ref_db FOREIGN KEY ([database_id])
+--		REFERENCES [instance].[database]([database_id])
+--		ON DELETE CASCADE
+--		ON UPDATE CASCADE 
+--);
 
 -- What are the names of the views within each database schema?
--- The 'o_' prefix is prepended to tables which support object level comparisons
-DROP TABLE IF EXISTS dbo.[o_view];
+-- The 's_' prefix is prepended to tables which support object level comparisons
+--DROP TABLE IF EXISTS dbo.[s_view];
 
-CREATE TABLE dbo.o_view
-(
-	[database_id] INT NOT NULL
-,   [schema_name] SYSNAME NOT NULL
-,	[view_name] SYSNAME NOT NULL 
-,	CONSTRAINT pk_o_view PRIMARY KEY([database_id], [view_name])
-,	CONSTRAINT fk_o_view_2_ref_db FOREIGN KEY ([database_id])
-		REFERENCES dbo.[database]([database_id])
-		ON DELETE CASCADE
-		ON UPDATE CASCADE 
-);
+--CREATE TABLE dbo.s_view
+--(
+--	[database_id] INT NOT NULL
+--,   [schema_name] SYSNAME NOT NULL
+--,	[view_name] SYSNAME NOT NULL 
+--,	CONSTRAINT pk_s_view PRIMARY KEY([database_id], [schema_name], [view_name])
+--,	CONSTRAINT fk_s_view_2_ref_db FOREIGN KEY ([database_id])
+--		REFERENCES [instance].[database]([database_id])
+--		ON DELETE CASCADE
+--		ON UPDATE CASCADE 
+--);
+
+--DROP TABLE IF EXISTS dbo.s_view_column;
+
+--CREATE TABLE dbo.s_view_column
+--(
+--	[database_id] INT NOT NULL
+--,   [schema_name] SYSNAME NOT NULL
+--,	[view_name] SYSNAME NOT NULL 
+--,	[column_name] SYSNAME NOT NULL
+--,	CONSTRAINT 
+--		pk_s_table_column 
+--	PRIMARY KEY
+--	(
+--		[database_id]
+--	,	[schema_name]
+--	,	[view_name]
+--	,	[column_name]
+--	)
+--,	CONSTRAINT fk_s_view_column_2_ref_db 
+--	FOREIGN KEY 
+--	(	
+--		[database_id]
+--	)
+--	REFERENCES 
+--		[instance].[database]
+--	(
+--		[database_id]
+--	)
+--	ON DELETE CASCADE
+--	ON UPDATE CASCADE 
+--);
 
 -- Given a two database ids database_id_left and database_id_right,
 -- list the table_names which appear only on the left or the right.
@@ -174,11 +232,11 @@ CREATE TABLE dbo.d_table
 
 ,	CONSTRAINT fk_d_table_left_2_db 
 	FOREIGN KEY ([database_id_left])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,	CONSTRAINT fk_d_table_right_2_db 
 	FOREIGN KEY ([database_id_right])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,   CONSTRAINT chk_d_table_indicator_is_left_or_right
 	CHECK (
@@ -209,11 +267,11 @@ CREATE TABLE dbo.d_view
 
 ,	CONSTRAINT fk_d_view_left_2_db 
 	FOREIGN KEY ([database_id_left])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,	CONSTRAINT fk_d_view_right_2_db 
 	FOREIGN KEY ([database_id_right])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,   CONSTRAINT chk_d_view_indicator_is_left_or_right
 	CHECK (
@@ -244,11 +302,11 @@ CREATE TABLE dbo.d_uddt
 
 ,	CONSTRAINT fk_d_uddt_left_2_db 
 	FOREIGN KEY ([database_id_left])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,	CONSTRAINT fk_d_uddt_right_2_db 
 	FOREIGN KEY ([database_id_right])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,   CONSTRAINT chk_d_uddt_indicator_is_left_or_right
 	CHECK (
@@ -279,11 +337,11 @@ CREATE TABLE dbo.d_proc
 
 ,	CONSTRAINT fk_d_proc_left_2_db 
 	FOREIGN KEY ([database_id_left])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,	CONSTRAINT fk_d_proc_right_2_db 
 	FOREIGN KEY ([database_id_right])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,   CONSTRAINT chk_d_proc_indicator_is_left_or_right
 	CHECK (
@@ -313,11 +371,11 @@ CREATE TABLE dbo.d_func
 
 ,	CONSTRAINT fk_d_func_left_2_db 
 	FOREIGN KEY ([database_id_left])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,	CONSTRAINT fk_d_func_right_2_db 
 	FOREIGN KEY ([database_id_right])
-		REFERENCES dbo.[database]([database_id])
+		REFERENCES [instance].[database]([database_id])
 
 ,   CONSTRAINT chk_d_func_indicator_is_left_or_right
 	CHECK (
@@ -352,12 +410,12 @@ SELECT [schema_id], [name]
 FROM sys.views 
 --*/
 
-INSERT INTO dbo.[database]
+INSERT INTO [instance].[database]
 VALUES (1, 'd1')
 ,	   (2, 'd2')
 ; 
 
-INSERT INTO dbo.o_schema 
+INSERT INTO dbo.s_schema 
 VALUES 
 -- only in d1
 	   (1, 's_d1')
@@ -370,7 +428,7 @@ VALUES
 ,	   (2, 's_d2')
 ;
 
-INSERT INTO dbo.o_table
+INSERT INTO dbo.s_table
 VALUES 
 	-- only in d1's s1
 	(1, 's1', 's1_ta')
@@ -394,7 +452,7 @@ VALUES
 ,	(2, 's2', 's2_tz')
 ;
 
-INSERT INTO dbo.o_view
+INSERT INTO dbo.s_view
 VALUES 
 	-- only in d1's s1
 	(1, 's1', 's1_va')
@@ -418,7 +476,7 @@ VALUES
 ,	(2, 's2', 's2_vz')
 ;
 
-INSERT INTO dbo.o_uddt
+INSERT INTO dbo.s_uddt
 VALUES 
 	-- only in d1's s1
 	(1, 's1', 's1_uddta')
@@ -442,7 +500,7 @@ VALUES
 ,	(2, 's2', 's2_uddtz')
 ;
 
-INSERT INTO dbo.o_func
+INSERT INTO dbo.s_func
 VALUES 
 	-- only in d1's s1
 	(1, 's1', 's1_funca')
@@ -466,7 +524,7 @@ VALUES
 ,	(2, 's2', 's2_funcz')
 ;
 
-INSERT INTO dbo.o_proc 
+INSERT INTO dbo.s_proc 
 VALUES 
 	-- only in d1's s1
 	(1, 's1', 's1_proca')
@@ -491,25 +549,25 @@ VALUES
 ;
 
 SELECT 'database';
-SELECT * FROM dbo.[database] 
+SELECT * FROM [instance].[database] 
 
-SELECT 'o_schema';
-SELECT * FROM dbo.[o_schema] ORDER BY [schema_name], [database_id]
+SELECT 's_schema';
+SELECT * FROM dbo.[s_schema] ORDER BY [schema_name], [database_id]
 
-SELECT 'o_table';
-SELECT * FROM dbo.[o_table] ORDER BY [schema_name], [database_id]
+SELECT 's_table';
+SELECT * FROM dbo.[s_table] ORDER BY [schema_name], [database_id]
 
-SELECT 'o_func';
-SELECT * FROM dbo.[o_func] ORDER BY [schema_name], [database_id]
+SELECT 's_func';
+SELECT * FROM dbo.[s_func] ORDER BY [schema_name], [database_id]
 
-SELECT 'o_view';
-SELECT * FROM dbo.[o_view] ORDER BY [schema_name], [database_id]
+SELECT 's_view';
+SELECT * FROM dbo.[s_view] ORDER BY [schema_name], [database_id]
 
-SELECT 'o_proc';
-SELECT * FROM dbo.[o_proc] ORDER BY [schema_name], [database_id]
+SELECT 's_proc';
+SELECT * FROM dbo.[s_proc] ORDER BY [schema_name], [database_id]
 
-SELECT 'o_uddt';
-SELECT * FROM dbo.[o_uddt] ORDER BY [schema_name], [database_id]
+SELECT 's_uddt';
+SELECT * FROM dbo.[s_uddt] ORDER BY [schema_name], [database_id]
 
 DROP PROCEDURE IF EXISTS dbo.p_compare_object; 
 GO
@@ -528,7 +586,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [table_name] 
-		FROM dbo.o_table
+		FROM dbo.s_table
 		WHERE [database_id] = @li_database_id_left
 
 		EXCEPT
@@ -536,7 +594,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [table_name] 
-		FROM dbo.o_table
+		FROM dbo.s_table
 		WHERE [database_id] = @li_database_id_right
 	)
 	INSERT INTO dbo.d_table 
@@ -560,7 +618,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [table_name] 
-		FROM dbo.o_table
+		FROM dbo.s_table
 		WHERE [database_id] = @li_database_id_right
 
 		EXCEPT
@@ -568,7 +626,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [table_name] 
-		FROM dbo.o_table
+		FROM dbo.s_table
 		WHERE [database_id] = @li_database_id_left
 	)
 	INSERT INTO dbo.d_table 
@@ -592,7 +650,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [view_name] 
-		FROM dbo.o_view
+		FROM dbo.s_view
 		WHERE [database_id] = @li_database_id_left
 
 		EXCEPT
@@ -600,7 +658,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [view_name] 
-		FROM dbo.o_view
+		FROM dbo.s_view
 		WHERE [database_id] = @li_database_id_right
 	)
 	INSERT INTO dbo.d_view 
@@ -624,7 +682,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [view_name] 
-		FROM dbo.o_view
+		FROM dbo.s_view
 		WHERE [database_id] = @li_database_id_right
 
 		EXCEPT
@@ -632,7 +690,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [view_name] 
-		FROM dbo.o_view
+		FROM dbo.s_view
 		WHERE [database_id] = @li_database_id_left
 	)
 	INSERT INTO dbo.d_view 
@@ -656,7 +714,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [uddt_name] 
-		FROM dbo.o_uddt
+		FROM dbo.s_uddt
 		WHERE [database_id] = @li_database_id_left
 
 		EXCEPT
@@ -664,7 +722,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [uddt_name] 
-		FROM dbo.o_uddt
+		FROM dbo.s_uddt
 		WHERE [database_id] = @li_database_id_right
 	)
 	INSERT INTO dbo.d_uddt 
@@ -688,7 +746,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [uddt_name] 
-		FROM dbo.o_uddt
+		FROM dbo.s_uddt
 		WHERE [database_id] = @li_database_id_right
 
 		EXCEPT
@@ -696,7 +754,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [uddt_name] 
-		FROM dbo.o_uddt
+		FROM dbo.s_uddt
 		WHERE [database_id] = @li_database_id_left
 	)
 	INSERT INTO dbo.d_uddt 
@@ -720,7 +778,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [proc_name] 
-		FROM dbo.o_proc
+		FROM dbo.s_proc
 		WHERE [database_id] = @li_database_id_left
 
 		EXCEPT
@@ -728,7 +786,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [proc_name] 
-		FROM dbo.o_proc
+		FROM dbo.s_proc
 		WHERE [database_id] = @li_database_id_right
 	)
 	INSERT INTO dbo.d_proc 
@@ -752,7 +810,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [proc_name] 
-		FROM dbo.o_proc
+		FROM dbo.s_proc
 		WHERE [database_id] = @li_database_id_right
 
 		EXCEPT
@@ -760,7 +818,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [proc_name] 
-		FROM dbo.o_proc
+		FROM dbo.s_proc
 		WHERE [database_id] = @li_database_id_left
 	)
 	INSERT INTO dbo.d_proc 
@@ -784,7 +842,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [func_name] 
-		FROM dbo.o_func
+		FROM dbo.s_func
 		WHERE [database_id] = @li_database_id_left
 
 		EXCEPT
@@ -792,7 +850,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [func_name] 
-		FROM dbo.o_func
+		FROM dbo.s_func
 		WHERE [database_id] = @li_database_id_right
 	)
 	INSERT INTO dbo.d_func 
@@ -816,7 +874,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [func_name] 
-		FROM dbo.o_func
+		FROM dbo.s_func
 		WHERE [database_id] = @li_database_id_right
 
 		EXCEPT
@@ -824,7 +882,7 @@ BEGIN
 		SELECT 
 			   [schema_name] 
 		,	   [func_name] 
-		FROM dbo.o_func
+		FROM dbo.s_func
 		WHERE [database_id] = @li_database_id_left
 	)
 	INSERT INTO dbo.d_func 
@@ -855,3 +913,23 @@ SELECT * FROM dbo.d_uddt ORDER BY [database_id_indicator], [schema_name], [uddt_
 SELECT * FROM dbo.d_proc ORDER BY [database_id_indicator], [schema_name], [proc_name]
 SELECT * FROM dbo.d_func ORDER BY [database_id_indicator], [schema_name], [func_name]
 
+SELECT * FROM sys.objects WHERE [type] = N'v'
+
+SELECT * 
+FROM sys.columns AS C
+	INNER JOIN sys.objects AS O
+		ON C.object_id = O.object_id
+WHERE O.[type] = N'V'
+
+GO
+
+SELECT * FROM sys.schemas
+
+/*
+DROP TABLE [schema].<object>
+
+CREATE 
+
+*/
+
+SELECT * FROM sys.types WHERE [name] = N'name'

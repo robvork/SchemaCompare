@@ -1,0 +1,4 @@
+DROP TYPE IF EXISTS [config].[NAME];
+
+CREATE TYPE [config].[NAME]
+FROM NVARCHAR(128); 
