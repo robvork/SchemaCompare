@@ -92,11 +92,20 @@ BEGIN
 			SELECT * FROM #system_type;
 		END;
 
-		--IF @ai_debug_level > 1
-		--BEGIN
-		--	SELECT '[config].[system_type] at the END of procedure';
-		--	SELECT * FROM [config].[system_type];
-		--END;
+		INSERT INTO 
+			[config].[system_type] 
+		(
+			[system_type_id]
+		,	[system_type_name]
+		,	[system_type_has_length]
+		)
+		SELECT 
+			[row_id] 
+		,	[system_type_name] 
+		,	[system_type_has_length]
+		FROM 
+			#system_type
+		;
 
 	END TRY
 	BEGIN CATCH

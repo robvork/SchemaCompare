@@ -1159,4 +1159,15 @@ FROM [config].[next_id] AS NI
 INNER JOIN sys.objects AS O
 	ON NI.[system_object_id] = O.[object_id]
 
+SELECT * FROM [config].[object_class]
+SELECT * FROM [config].[object_class_property]
+SELECT * FROM [config].[system_type]
 SELECT * FROM [config].[object_to_subobject]
+
+EXEC [config].[p_initialize_object_class_property]
+	@ai_debug_level = 2
+
+SELECT * FROM sys.all_views
+WHERE [name] = 'tables'
+
+SELECT * FROM sys.schemas
