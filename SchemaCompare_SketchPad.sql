@@ -1129,4 +1129,34 @@ FROM [config].[next_id] AS N
 INNER JOIN sys.objects AS O
 	ON N.[system_object_id] = O.[object_id]
 
-EXEC [config].[p_initialize_object_class]
+EXEC [config].[p_initialize_next_id]
+EXEC [config].[p_initialize_object_class] @ai_debug_level = 2
+
+CREATE TABLE #test 
+(
+	test_id INT NOT NULL
+)
+
+SELECT * FROM tempdb.sys.columns WHERE [object_id] = OBJECT_ID('tempdb.dbo.#test')
+
+SELECT OBJECT_ID('tempdb.dbo.#test')
+
+SELECT * FROM sys.objects
+
+SELECT * FROM sys.columns
+
+SELECT * FROM [config].[object_class]
+SELECT * FROM [config].[next_id]
+
+EXEC [config].[p_initialize_object_to_subobject]
+	@ai_debug_level = 2
+
+EXEC [config].[p_initialize_system_type]
+	@ai_debug_level = 2
+
+SELECT O.[name], NI.[next_id] 
+FROM [config].[next_id] AS NI
+INNER JOIN sys.objects AS O
+	ON NI.[system_object_id] = O.[object_id]
+
+SELECT * FROM [config].[object_to_subobject]

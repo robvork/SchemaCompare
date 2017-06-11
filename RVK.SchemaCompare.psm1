@@ -100,7 +100,24 @@ function Initialize-SchemaCompareDB
         Write-Verbose "Function creation SUCCESS"
 
         #Initialize IDs
+        Write-Verbose "Initializing IDs"
         Initialize-SchemaCompareIDGenerator @ConnectionParams
+        Write-Verbose "ID initialization SUCCESS"
+
+        #Initialize object classes
+        Write-Verbose "Initializing object classes"
+        Initialize-SchemaCompareObjectClass @ConnectionParams
+        Write-Verbose "Object class initialization SUCCESS"
+
+        #Initialize object to subobject mapping
+        Write-Verbose "Initializing object to subobject mapping"
+        Initialize-SchemaCompareObjectToSubobject @ConnectionParams
+        Write-Verbose "Object to subobject initialization SUCCESS"
+
+        #Initialize system types
+        Write-Verbose "Initializing system types"
+        Initialize-SchemaCompareSystemType @ConnectionParams
+        Write-Verbose "System type initialization SUCCESS"
     }
     catch
     {
@@ -117,7 +134,7 @@ function Initialize-SchemaCompareIDGenerator
     ,   [String] $Database
     )
 
-    $Query = "EXECUTE [config].p_initialize_next_id"
+    $Query = "EXECUTE [config].[p_initialize_next_id]"
     Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
 
@@ -129,4 +146,30 @@ function Initialize-SchemaCompareObjectClass
         [String] $ServerInstance
     ,   [String] $Database
     )
+    $Query = "EXECUTE [config].[p_initialize_object_class]"
+    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
+}
+
+function Initialize-SchemaCompareObjectToSubobject
+{
+    [CmdletBinding()]
+    param
+    (
+        [String] $ServerInstance
+    ,   [String] $Database
+    )
+    $Query = "EXECUTE [config].[p_initialize_object_to_subobject]"
+    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
+}
+
+function Initialize-SchemaCompareSystemType
+{
+    [CmdletBinding()]
+    param
+    (
+        [String] $ServerInstance
+    ,   [String] $Database
+    )
+    $Query = "EXECUTE [config].[p_initialize_system_type]"
+    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
