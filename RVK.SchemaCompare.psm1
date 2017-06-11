@@ -10,6 +10,7 @@ function Initialize-SchemaCompareDB
     ,   [String[]] $CreateTableScripts
     ,   [String[]] $CreateForeignKeyScripts
     ,   [String[]] $CreateProcedureScripts
+    ,   [String[]] $CreateFunctionScripts
     )
 
     try
@@ -80,16 +81,52 @@ function Initialize-SchemaCompareDB
 
         #Create procedures
         Write-Verbose "Creating procedures"
-        foreach($cpScript in $CreateForeignKeyScripts)
+        foreach($cpScript in $CreateProcedureScripts)
         {
             Write-Verbose "Creating procedure by running '$cpScript'"
             Invoke-Sqlcmd @ConnectionParams -InputFile $cpScript -ErrorAction Stop 
             Write-Verbose "Procedure created successfully"
         }
         Write-Verbose "Procedure creation SUCCESS"
+
+        #Create functions
+        Write-Verbose "Creating functions"
+        foreach($cfScript in $CreateFunctionScripts)
+        {
+            Write-Verbose "Creating procedure by running '$cfScript'"
+            Invoke-Sqlcmd @ConnectionParams -InputFile $cfScript -ErrorAction Stop 
+            Write-Verbose "Function created successfully"
+        }
+        Write-Verbose "Function creation SUCCESS"
+
+        #Initialize IDs
+        Initialize-SchemaCompareIDGenerator @ConnectionParams
     }
     catch
     {
         throw $_.Exception 
     }
+}
+
+function Initialize-SchemaCompareIDGenerator
+{
+    [CmdletBinding()]
+    param
+    (
+        [String] $ServerInstance
+    ,   [String] $Database
+    )
+
+    $Query = "EXECUTE [config].p_initialize_next_id"
+    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
+}
+
+function Initialize-SchemaCompareObjectClass
+{
+    [CmdletBinding()]
+    param
+    (
+        [String] $ServerInstance
+    ,   [String] $Database
+    )
 }

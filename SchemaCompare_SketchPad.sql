@@ -932,4 +932,201 @@ CREATE
 
 */
 
-SELECT * FROM sys.types WHERE [name] = N'name'
+-- Tables
+SELECT 
+	[schema_id]  -- int
+,	SCHEMA_NAME([schema_id]) AS [schema_name] -- sysname
+,	[object_id] -- int
+,	[name] AS [column_name] -- sysname
+,	[uses_ansi_nulls] -- bit
+,	[is_replicated] -- bit
+FROM sys.tables
+
+-- Table columns
+SELECT 
+	[object_id] -- int
+,	OBJECT_NAME([object_id]) AS [table_name] -- sysname
+,	[name] AS [column_name] -- sysname
+,	[system_type_id]
+,	[is_nullable] -- bit
+,	[precision]
+,	[scale]
+FROM 
+	sys.columns AS C
+WHERE EXISTS(SELECT * FROM sys.tables AS T WHERE C.[object_id] = T.[object_id])
+
+-- Views
+SELECT 
+	[schema_id] -- int
+,	SCHEMA_NAME([schema_id]) AS [schema_name] -- sysname
+,	[object_id] -- int
+,	[name] AS [view_name] -- sysname
+,	[has_opaque_metadata]
+,	[is_date_correlation_view] -- bit
+,	[is_tracked_by_cdc] -- bit
+FROM sys.views
+
+-- View columns
+SELECT 
+	[object_id] -- int
+,	OBJECT_NAME([object_id]) AS [view_name] -- sysname
+,	[name] AS [column_name] -- sysname
+,	[system_type_id]
+,	[is_nullable] -- bit
+,	[collation_name] -- sysname
+,	[is_filestream] -- bit
+FROM 
+	sys.columns AS C
+WHERE EXISTS(SELECT * FROM sys.views AS V WHERE C.[object_id] = V.[object_id])
+
+-- Procedures
+SELECT 
+	[schema_id] -- int
+,	SCHEMA_NAME([schema_id]) -- sysname
+,	[object_id] -- int
+,	[name] AS [procedure_name] -- sysname
+FROM sys.procedures
+
+-- Procedure parameters
+SELECT 
+	[object_id] -- int
+,	OBJECT_NAME([object_id]) AS [procedure_name] -- sysname
+,	[name] AS [parameter_name] -- sysname
+,	[system_type_id] -- int
+,	[is_output] -- bit
+,	[has_default_value] -- bit
+,	[is_nullable] -- bit
+FROM sys.parameters AS PA
+WHERE EXISTS (SELECT * FROM sys.procedures AS PR WHERE PR.[object_id] = PA.[object_id])
+
+-- Functions
+SELECT 
+	[schema_id] -- int
+,	SCHEMA_NAME([schema_id]) AS [schema_name] -- sysname
+,	[object_id] -- int
+,	[name] AS [function_name] -- sysname
+FROM sys.objects 
+WHERE [type] = N'FN'
+
+-- Function parameters
+SELECT 
+	[object_id] -- int
+,	OBJECT_NAME([object_id]) AS [procedure_name] -- sysname
+,	[name] AS [parameter_name] -- sysname
+,	[system_type_id] -- int
+,	[is_output] -- bit
+,	[has_default_value] -- bit
+,	[default_value]
+,	[encryption_type]
+,	[is_nullable] -- bit
+FROM sys.parameters AS PA
+WHERE EXISTS (SELECT * FROM sys.objects AS FN WHERE FN.[object_id] = PA.[object_id]
+			  AND FN.[type] = N'FN'	
+)
+
+-- UDDTs
+SELECT 
+	[schema_id] -- int
+,	SCHEMA_NAME([schema_id]) AS [schema_name] -- sysname
+,	[name] AS [uddt_name] -- sysname
+,	[system_type_id] -- int
+,	[max_length]
+,	[precision]
+,	[scale] 
+,	[is_nullable] -- bit
+FROM sys.types
+WHERE [is_user_defined] = 1
+
+SELECT * FROM sys.types
+SELECT * FROM sys.columns
+
+SELECT DISTINCT T.[name]
+FROM sys.all_views AS V
+	INNER JOIN sys.all_columns AS C
+		ON V.[object_id] = C.[object_id]
+	INNER JOIN sys.types AS T
+		ON C.[system_type_id] = T.[system_type_id] 
+		   AND 
+		   T.[is_user_defined] = 0
+WHERE V.[schema_id] = SCHEMA_ID('sys')
+	  AND 
+	  V.[name] IN ('procedures','views','tables','types','objects')
+	  AND 
+	  V.[is_ms_shipped] = 1
+
+--SELECT DISTINCT V.[name], C.[name], T.[name]
+--FROM sys.all_views AS V
+--	INNER JOIN sys.all_columns AS C
+--		ON V.[object_id] = C.[object_id]
+--	INNER JOIN sys.types AS T
+--		ON C.[system_type_id] = T.[system_type_id] 
+--		   AND 
+--		   T.[is_user_defined] = 0
+--WHERE T.[name] IN ('geometry', 'geography', 'hierarchyid')
+--	  AND 
+--	  V.[is_ms_shipped] = 1
+
+
+SELECT 
+	DENSE_RANK() OVER (ORDER BY V.[object_id]) AS [view_id]
+,	V.[name] AS [view_name]
+,	C.[name] AS [column_name]
+,	T.[name] AS [type_name]
+,	CASE 
+		WHEN T.[name] IN ('NCHAR', 'NVARCHAR', 'CHAR', 'VARCHAR')
+			THEN 1 
+		ELSE 
+			0
+	END AS has_length
+,	CASE 
+		WHEN T.[name] IN ('NCHAR', 'NVARCHAR')
+			THEN 
+				C.[max_length]/2 
+		WHEN T.[name] IN ('CHAR', 'VARCHAR')
+			THEN 
+				C.[max_length]
+		ELSE 
+			-1
+	END AS [length]
+FROM sys.all_views AS V
+	INNER JOIN sys.all_columns AS C
+		ON V.[object_id] = C.[object_id]
+	INNER JOIN sys.types AS T
+		ON C.[system_type_id] = T.[system_type_id] 
+		   AND 
+		   T.[is_user_defined] = 0
+		   AND 
+		   T.[system_type_id] = T.[user_type_id]
+WHERE V.[schema_id] = SCHEMA_ID('sys')
+	  AND 
+	  V.[name] IN ('procedures','views','tables','types','objects')
+	  AND 
+	  V.[is_ms_shipped] = 1
+ORDER BY V.[name], C.[column_id]
+
+SELECT * FROM sys.types
+
+EXEC [config].[p_initialize_next_id]
+SELECT * FROM [config].[next_id]
+
+DROP TABLE IF EXISTS #object_id; 
+
+CREATE TABLE #object_id
+(
+	[object_id] INT
+)
+
+INSERT INTO #object_id 
+EXEC [config].[p_get_next_id]
+	@as_schema_name = 'config'
+,	@as_table_name = 'object_class'
+,	@ai_num_ids_needed = 5
+
+SELECT * FROM #object_id;
+
+SELECT O.[name], N.[next_id]
+FROM [config].[next_id] AS N
+INNER JOIN sys.objects AS O
+	ON N.[system_object_id] = O.[object_id]
+
+EXEC [config].[p_initialize_object_class]

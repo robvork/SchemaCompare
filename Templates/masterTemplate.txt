@@ -214,3 +214,41 @@ p_compare_object
 8. Let S = SUBCLASS(@object_class).
 9. Go to step 5. 
 
+config.instance
+instance_id, instance_name
+<next_id>, 'ASPIRING\SQL16'
+
+config.object_class
+object_class_id, object_class_name, object_class_source, object_class_source_alias
+<next_id>, 'table', 'sys.tables AS <alias>', 'T'
+<next_id>, 'table_column', 'sys.columns AS <alias> WHERE EXISTS 
+						    (SELECT * FROM sys.tables WHERE sys.tables.[object_id] = <alias>.[object_id]')
+<next_id>, 'view', 'sys.views AS <alias>', 'V'
+<next_id>, 'view_column', 'sys.columns AS <alias> WHERE EXISTS 
+						    (SELECT * FROM sys.views WHERE sys.views.[object_id] = <alias>.[object_id]'), 'C'
+<next_id>, 'uddt', 'sys.types AS <alias>', 'T'
+<next_id>, 'proc', 'sys.procedures AS <alias>', 'P'
+<next_id>, 'proc_param', 'sys.parameters AS <alias> WHERE EXISTS
+						    (SELECT * FROM sys.procedures WHERE sys.procedures.[object_id] = <alias>.[object_id])
+						'
+<next_id>, 'function', 'sys.object'
+<next_id>, 'function_param', 'sys.parameters'
+
+config.system_type
+system_type_id,system_type_name,system_type_has_length
+<next_id>,BIT,0
+<next_id>,TINYINT,0
+<next_id>,SMALLINT,0
+<next_id>,INT,0
+<next_id>,BIGINT,0
+<next_id>,NCHAR,1
+<next_id>,NVARCHAR,1
+<next_id>,CHAR,1
+<next_id>,VARCHAR,1
+<next_id>,SYSNAME,0
+<next_id>,DATETIME,0
+
+config.object_class_property
+oc_id, oc_prop_id, oc_prop_sys_type_id, oc_prop_name, oc_prop_nullable, oc_prop_requires_len, oc_prop_max_length_bytes
+get_object_class('table'), <next_id>, get_type_id()
+
