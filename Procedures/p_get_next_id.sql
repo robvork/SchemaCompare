@@ -70,14 +70,17 @@ BEGIN
 			'SET @ai_num_ids_needed = 
 			 (
 				SELECT COUNT(*) 
-				FROM tempdb.dbo.', @as_work_table_name, N'
+				FROM ', @as_work_table_name, N'
 			 );'
 		)
+
 		EXEC sp_executesql 
 			@stmt = @ls_sql 
 		,	@params = @ls_params 
 		,	@ai_num_ids_needed = @li_num_ids_needed OUTPUT 
 		;
+
+		PRINT CONCAT('@li_num_ids_needed:', @li_num_ids_needed);
 	/*******************************************************************************
 	Validate parameters
 	*******************************************************************************/
@@ -308,7 +311,11 @@ BEGIN
 
 	END TRY
 	BEGIN CATCH
-		SET @ls_error_msg = ERROR_MESSAGE();
+		SET @ls_error_msg = 
+			CONCAT( ERROR_MESSAGE(), NCHAR(13)
+				  ,'Error Line: ', ERROR_LINE(), NCHAR(13)
+				  ,'Error Procedure: ', ERROR_PROCEDURE()
+				  );
 		RAISERROR(@ls_error_msg, 16, 1);
 	END CATCH;
 END; 

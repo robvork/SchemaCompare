@@ -230,9 +230,11 @@ object_class_id, object_class_name, object_class_source, object_class_source_ali
 <next_id>, 'proc', 'sys.procedures AS <alias>', 'P'
 <next_id>, 'proc_param', 'sys.parameters AS <alias> WHERE EXISTS
 						    (SELECT * FROM sys.procedures WHERE sys.procedures.[object_id] = <alias>.[object_id])
-						'
-<next_id>, 'function', 'sys.object'
-<next_id>, 'function_param', 'sys.parameters'
+						', 'P'
+<next_id>, 'function', 'sys.object AS <alias> WHERE [type] = N''FN''', 'F'
+<next_id>, 'function_param', 'sys.parameters AS <alias> WHERE EXISTS
+						    (SELECT * FROM sys.objects WHERE sys.objects.[object_id] = <alias>.[object_id] AND sys.objects.[type] = ''FN'''
+'
 
 config.system_type
 system_type_id,system_type_name,system_type_has_length
@@ -249,6 +251,6 @@ system_type_id,system_type_name,system_type_has_length
 <next_id>,DATETIME,0
 
 config.object_class_property
-oc_id, oc_prop_id, oc_prop_sys_type_id, oc_prop_name, oc_prop_nullable, oc_prop_requires_len, oc_prop_max_length_bytes
+oc_id, oc_prop_id, oc_prop_sys_type_id, oc_prop_name, oc_prop_nullable, oc_prop_has_length, oc_prop_length
 get_object_class('table'), <next_id>, get_type_id()
 

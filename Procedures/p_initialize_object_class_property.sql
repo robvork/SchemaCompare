@@ -325,15 +325,21 @@ BEGIN
 		,	[object_class_property_is_enabled]
 		FROM
 			#object_class_property
-
+		;
 
 	END TRY
 	BEGIN CATCH
 		SET @ls_error_msg = 
-			CONCAT(ERROR_MESSAGE(), ERROR_LINE())
+			CONCAT( ERROR_MESSAGE(), NCHAR(13)
+				  ,'Error Line: ', ERROR_LINE(), NCHAR(13)
+				  ,'Error Procedure: ', ERROR_PROCEDURE()
+				  );
 		RAISERROR(@ls_error_msg, 16, 1);
 	END CATCH;
 END;
 
 --SELECT * FROM [config].[object_class]
 --SELECT * FROM [config].[system_type]
+SELECT * FROM [config].[object_class_property]
+
+EXEC [config].[p_initialize_object_class_property]
