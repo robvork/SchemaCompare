@@ -1091,3 +1091,38 @@ function Register-SQLServerDatabase
 
 
 }
+
+function Get-SchemaCompareObjectClass
+{
+    [CmdletBinding()]
+    param 
+    (
+        [Parameter(Mandatory=$True)]
+        [String] $ServerInstance 
+    ,
+        [Parameter(Mandatory=$True)]
+        [String] $Database 
+    ,
+        [AllowNull()]
+        [String] $Name 
+    )
+
+    $ConnectionParams = @{
+        ServerInstance=$ServerInstance;
+        Database=$Database; 
+    }
+
+    if($Name -eq $null)
+    {
+        $Name = "NULL"
+    }
+    else 
+    {
+        $Name = "'$Name'"
+    }
+
+    $Query = "EXECUTE [config].[p_get_object_class] 
+                      @as_object_class_name = $Name"
+
+    Invoke-SqlCmd2 @ConnectionParams -Query $Query -As PSObject
+}
