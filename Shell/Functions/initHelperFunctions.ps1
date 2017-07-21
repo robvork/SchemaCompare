@@ -8,7 +8,7 @@ function Initialize-SchemaCompareIDGenerator
     )
 
     $Query = "EXECUTE [config].[p_initialize_next_id]"
-    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
 
 function Initialize-SchemaCompareObjectClass
@@ -20,7 +20,7 @@ function Initialize-SchemaCompareObjectClass
     ,   [String] $Database
     )
     $Query = "EXECUTE [config].[p_initialize_object_class]"
-    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
 
 function Initialize-SchemaCompareObjectToSubobject
@@ -32,7 +32,7 @@ function Initialize-SchemaCompareObjectToSubobject
     ,   [String] $Database
     )
     $Query = "EXECUTE [config].[p_initialize_object_to_subobject]"
-    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
 
 function Initialize-SchemaCompareSystemType
@@ -44,7 +44,7 @@ function Initialize-SchemaCompareSystemType
     ,   [String] $Database
     )
     $Query = "EXECUTE [config].[p_initialize_system_type]"
-    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
 
 function Initialize-SchemaCompareObjectClassProperty
@@ -56,5 +56,5 @@ function Initialize-SchemaCompareObjectClassProperty
     ,   [String] $Database
     )
     $Query = "EXECUTE [config].[p_initialize_system_type]"
-    Invoke-Sqlcmd -ServerInstance $ServerInstance -Database $Database -Query $Query 
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }

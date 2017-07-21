@@ -1185,18 +1185,20 @@ function Install-SchemaCompare
     # Locate the root paths of database object creation scripts
     Write-Verbose "Setting database object script paths..."
     $ModuleRoot = $PSScriptRoot
-    $SchemasPath = "$ModuleRoot\Database\Schemas"
-    $DataTypesPath = "$ModuleRoot\Database\Types"
-    $TablesPath = "$ModuleRoot\Database\Tables\config"
-    $ProceduresPath = "$ModuleRoot\Database\Procedures"
-    $FunctionsPath = "$ModuleRoot\Database\Functions"
-    $ForeignKeysPath = "$ModuleRoot\Database\Foreign_Keys"
+    $SchemasMap        = @{ObjectTypeName="Schema"     ;  RootPath="$ModuleRoot\Database\Schemas"           ;} 
+    $DataTypesMap      = @{ObjectTypeName="DataType"   ;  RootPath="$ModuleRoot\Database\Types"             ;} 
+    $TablesMap         = @{ObjectTypeName="Table"      ;  RootPath="$ModuleRoot\Database\Tables\config"     ;} 
+    $ProceduresMap     = @{ObjectTypeName="Procedure"  ;  RootPath="$ModuleRoot\Database\Procedures"        ;} 
+    $FunctionsMap      = @{ObjectTypeName="Function"   ;  RootPath="$ModuleRoot\Database\Functions"         ;} 
+    $ForeignKeysMap    = @{ObjectTypeName="ForeignKey" ;  RootPath="$ModuleRoot\Database\Foreign_Keys"      ;} 
 
-    $RootPaths = @($SchemasPath, $DataTypesPath, $TablesPath, $ProceduresPath, $FunctionsPath, $ForeignKeysPath)
+    $RootMaps = @($SchemasMap, $DataTypesMap, $TablesMap, $ProceduresMap, $FunctionsMap, $ForeignKeysMap)
     Write-Verbose "...script paths set"
 
     Write-Verbose "Validating script paths..."
-    $InvalidPaths = $RootPaths | Where-Object -FilterScript {-not (Test-Path $_)}
+    $InvalidPaths = $RootMaps | 
+                    ForEach-Object {$_["RootPath"]} | 
+                    Where-Object -FilterScript {-not (Test-Path $_)}
     if($InvalidPaths -ne $null)
     {
         throw "The following paths are invalid: $($InvalidPaths -join "`n")"
@@ -1208,10 +1210,11 @@ function Install-SchemaCompare
 
     # Install database objects by running all SQL scripts at the specified locations
     Write-Verbose "Executing all SQL scripts in each object script path to create [config] schema objects..."
-    foreach($RootPath in $RootPaths)
+    foreach($RootMap in $RootMaps)
     {
         # Strip the s at the end if it exists to get object type name
-        $ObjectTypeName = (Split-Path -Path $RootPath -Leaf).TrimEnd('s')
+        $ObjectTypeName = $RootMap["ObjectTypeName"]
+        $RootPath = $RootMap["RootPath"]
         Write-Verbose "Creating objects of type $ObjectTypeName..."
 
         $Paths = 
@@ -1224,12 +1227,15 @@ function Install-SchemaCompare
         {
             $Paths | 
             Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName $ObjectTypeName -Verbose:($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+            Write-Verbose "$ObjectTypeName objects created."
         }
-        Write-Verbose "$ObjectTypeName objects created."
+        else 
+        {
+            Write-Verbose "There were no SQL scripts at path '$RootPath'"
+        }
+        
     }
-    Write-Verbose "...[config] schema objects created."
-
-    return 
+    Write-Verbose "...[config] schema objects created."    
 
     # Initialize the table used for generating numeric IDs of db rows
     Write-Verbose "Initializing ID generator..."
@@ -1243,18 +1249,20 @@ function Install-SchemaCompare
 
     # Initialize the table that links object classes to subobject classes (e.g. tables to columns, procedures to parameters)
     Write-Verbose "Initializing object to subobject table..."
-    Initialize-SchemaCompareObjectToSubobject
+    Initialize-SchemaCompareObjectToSubobject -ServerInstance $ServerInstance -Database $Database
     Write-Verbose "...object to subobject table initialized."
 
     # Initialize the table that stores the types that will appear in the automatically generated table definitions
     Write-Verbose "Initializing system type table..."
-    Initialize-SchemaCompareSystemType
+    Initialize-SchemaCompareSystemType -ServerInstance $ServerInstance -Database $Database
     Write-Verbose "...system type table initialized."
 
     # Initialize the table that specifies the fields and their properties (e.g. data types, nullability) that will be eligible for comparison for each object class
     Write-Verbose "Initializing object class property table..."
-    Initialize-SchemaCompareObjectClassProperty
+    Initialize-SchemaCompareObjectClassProperty -ServerInstance $ServerInstance -Database $Database
     Write-Verbose "...object class property table initialized."
+
+    return 
     
     # Generate the table create scripts for each object class and place them in $ModuleRoot\Database\Tables\object
     $ObjectClasses = Get-SchemaCompareObjectClass

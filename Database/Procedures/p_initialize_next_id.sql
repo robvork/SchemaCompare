@@ -29,10 +29,30 @@ BEGIN
 				RAISERROR(@ls_error_msg, 16, 1);
 			END;
 
-			UPDATE [config].[next_id] 
-			SET [next_id] = 1 
-			WHERE [system_object_id] = @li_table_object_id
-			;
+			IF EXISTS
+			(
+				SELECT * 
+				FROM [config].[next_id] 
+				WHERE [system_object_id] = @li_table_object_id
+			)
+			BEGIN 
+				UPDATE [config].[next_id] 
+				SET [next_id] = 1 
+				WHERE [system_object_id] = @li_table_object_id
+				;
+			END;
+			ELSE 
+			BEGIN 
+				INSERT INTO [config].[next_id]
+				(
+					[system_object_id]
+				,	[next_id]
+				)
+				SELECT 
+					@li_table_object_id
+				,	1
+				;
+			END; 
 
 		END;
 
