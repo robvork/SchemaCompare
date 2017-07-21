@@ -1126,3 +1126,94 @@ function Get-SchemaCompareObjectClass
 
     Invoke-SqlCmd2 @ConnectionParams -Query $Query -As PSObject
 }
+
+function Install-SchemaCompare
+{
+    [CmdletBinding()]
+    param 
+    (
+        [string] $ServerInstance
+    ,
+        [string] $Database
+    ,
+        [switch] $Force
+    )
+
+    try 
+    {
+        Set-StrictMode -Version Latest
+
+        # Verify that ServerInstance is valid and reachable
+        $ServerInstanceValid = Test-SQLServerInstance -ServerInstance $ServerInstance 
+        if(-not $ServerInstanceValid)
+        {
+            throw "ServerInstance '$ServerInstance' is not valid."
+        }
+
+        # Check whether the database exists. If it does, drop it only if the Force parameter is used.
+        $DatabaseExists = Test-SQLServerInstance -ServerInstance $ServerInstance -Database $Database
+        if($DatabaseExists)
+        {
+            if($Force)
+            {
+                Remove-Database -ServerInstance $ServerInstance -Database $Database
+            }
+            else # If the database exists and the Force parameter is NOT used, raise a terminating error and do not proceed.
+            {
+                throw "Database already exists. Use the Force parameter to overwrite it."
+            }
+        }
+
+        New-Database -ServerInstance $ServerInstance -Database $Database
+    }
+    catch 
+    {
+        throw $_.Exception.Message 
+    }
+    
+    # Locate the root paths of database object creation scripts
+    $ModuleRoot = $PSScriptRoot
+    $SchemasPath = "$ModuleRoot\Database\Schemas"
+    $DataTypesPath = "$ModuleRoot\Database\Types"
+    $TablesPath = "$ModuleRoot\Database\Tables"
+    $ProceduresPath = "$ModuleRoot\Database\Procedures"
+    $FunctionsPath = "$ModuleRoot\Database\Functions"
+    $ForeignKeysPath = "$ModuleRoot\Database\Foreign_Keys"
+
+    $RootPaths = @($SchemasPath, $DataTypesPath, $TablesPath, $ProceduresPath, $FunctionsPath, $ForeignKeysPath)
+
+    # Install database objects by running all SQL scripts at the specified locations
+    foreach($RootPath in $RootPaths)
+    {
+        # Strip the s at the end if it exists to get object type name
+        $ObjectTypeName = (Split-Path $RootPath -Leaf).TrimEnd('s')
+
+        $Paths = (Get-ChildItem $RootPath *.sql)
+        if($Paths -ne $null)
+        {
+            foreach($Path in $Paths)
+            {
+                Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName $ObjectTypeName -Path $Path
+            }
+        }
+    }
+
+    # Initialize the table used for generating numeric IDs of db rows
+    Initialize-SchemaCompareIDGenerator -ServerInstance $ServerInstance -Database $Database 
+
+    # Initialize the table that contains the classes of objects being considered in the comparisons (e.g. tables, procedures, table columns, procedure parameters)
+    Initialize-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database
+
+    # Initialize the table that links object classes to subobject classes (e.g. tables to columns, procedures to parameters)
+    Initialize-SchemaCompareObjectToSubobject
+
+    # Initialize the table that stores the types that will appear in the automatically generated table definitions
+    Initialize-SchemaCompareSystemType
+
+    # Initialize the table that specifies the fields that will be eligible for comparison for each object class
+    Initialize-SchemaCompareObjectClassProperty
+    
+    
+
+    echo $PSScriptRoot
+}
