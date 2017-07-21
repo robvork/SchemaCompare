@@ -1144,36 +1144,54 @@ function Install-SchemaCompare
         Set-StrictMode -Version Latest
 
         # Verify that ServerInstance is valid and reachable
+        Write-Verbose "Validating SQL Server Instance..."
         $ServerInstanceValid = Test-SQLServerInstance -ServerInstance $ServerInstance 
         if(-not $ServerInstanceValid)
         {
             throw "ServerInstance '$ServerInstance' is not valid."
         }
+        Write-Verbose "...Valid"
 
         # Check whether the database exists. If it does, drop it only if the Force parameter is used.
-        $DatabaseExists = Test-SQLServerInstance -ServerInstance $ServerInstance -Database $Database
+        Write-Verbose "Checking whether database exists..."
+        $DatabaseExists = Test-SQLServerDatabase -ServerInstance $ServerInstance -Database $Database
         if($DatabaseExists)
         {
+            Write-Verbose "...database exists"
             if($Force)
             {
+                Write-Verbose "Removing database..."
                 Remove-Database -ServerInstance $ServerInstance -Database $Database
+                Write-Verbose "...database removed."
             }
             else # If the database exists and the Force parameter is NOT used, raise a terminating error and do not proceed.
             {
                 throw "Database already exists. Use the Force parameter to overwrite it."
             }
         }
-
-        New-Database -ServerInstance $ServerInstance -Database $Database
+        else 
+        {
+            Write-Verbose "...database doesn't exist."
+        }
+        Write-Verbose "Creating new database..."
+        New-Database -ServerInstance $ServerInstance -Database $Database | Out-Null
+        Write-Verbose "...database created."
     }
     catch 
     {
-        throw $_.Exception.Message 
+        throw $_.Exception
     }
+    return 
     
     # Locate the root paths of database object creation scripts
+    Write-Verbose "Setting database object script paths..."
     $ModuleRoot = $PSScriptRoot
     $SchemasPath = "$ModuleRoot\Database\Schemas"
+    if(-not (Test-Path $SchemasPath))
+    {
+        throw "The module root does not contain a Schemas directory. Reinstall the module and try again."
+    }
+
     $DataTypesPath = "$ModuleRoot\Database\Types"
     $TablesPath = "$ModuleRoot\Database\Tables"
     $ProceduresPath = "$ModuleRoot\Database\Procedures"
@@ -1181,14 +1199,23 @@ function Install-SchemaCompare
     $ForeignKeysPath = "$ModuleRoot\Database\Foreign_Keys"
 
     $RootPaths = @($SchemasPath, $DataTypesPath, $TablesPath, $ProceduresPath, $FunctionsPath, $ForeignKeysPath)
+    Write-Verbose "...script paths set"
 
     # Install database objects by running all SQL scripts at the specified locations
+    Write-Verbose "Executing all SQL scripts in each object script path to create [config] schema objects..."
     foreach($RootPath in $RootPaths)
     {
         # Strip the s at the end if it exists to get object type name
-        $ObjectTypeName = (Split-Path $RootPath -Leaf).TrimEnd('s')
 
-        $Paths = (Get-ChildItem $RootPath *.sql)
+        $ObjectTypeName = (Split-Path -Path $RootPath -Leaf).TrimEnd('s')
+        Write-Verbose "Creating objects of type $ObjectTypeName..."
+
+        $Paths = 
+        (
+            Get-ChildItem -Path $RootPath -Filter *.sql | 
+            Select-Object -ExpandProperty FullName
+        )
+
         if($Paths -ne $null)
         {
             foreach($Path in $Paths)
@@ -1196,24 +1223,57 @@ function Install-SchemaCompare
                 Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName $ObjectTypeName -Path $Path
             }
         }
+        Write-Verbose "$ObjectTypeName objects created."
     }
+    Write-Verbose "...[config] schema objects created."
 
     # Initialize the table used for generating numeric IDs of db rows
+    Write-Verbose "Initializing ID generator..."
     Initialize-SchemaCompareIDGenerator -ServerInstance $ServerInstance -Database $Database 
+    Write-Verbose "...ID generator initialized."
 
     # Initialize the table that contains the classes of objects being considered in the comparisons (e.g. tables, procedures, table columns, procedure parameters)
+    Write-Verbose "Initializing object class table..."
     Initialize-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database
+    Write-Verbose "...object class table initialized."
 
     # Initialize the table that links object classes to subobject classes (e.g. tables to columns, procedures to parameters)
+    Write-Verbose "Initializing object to subobject table..."
     Initialize-SchemaCompareObjectToSubobject
+    Write-Verbose "...object to subobject table initialized."
 
     # Initialize the table that stores the types that will appear in the automatically generated table definitions
+    Write-Verbose "Initializing system type table..."
     Initialize-SchemaCompareSystemType
+    Write-Verbose "...system type table initialized."
 
-    # Initialize the table that specifies the fields that will be eligible for comparison for each object class
+    # Initialize the table that specifies the fields and their properties (e.g. data types, nullability) that will be eligible for comparison for each object class
+    Write-Verbose "Initializing object class property table..."
     Initialize-SchemaCompareObjectClassProperty
+    Write-Verbose "...object class property table initialized."
     
-    
+    # Generate the table create scripts for each object class and place them in $ModuleRoot\Database\Tables\object
+    $ObjectClasses = Get-SchemaCompareObjectClass
+    $ObjectScriptRoot = "$ModuleRoot\Database\Tables\object"
 
-    echo $PSScriptRoot
+    Write-Verbose "Generating table create scripts for each object class..."
+    foreach($ObjectClass in $ObjectClasses)
+    {
+        Write-Verbose "Creating script for object class '$ObjectClass'..."
+        New-SchemaCompareObjectClassTableScript -ServerInstance $ServerInstance -Database $Database -Name $ObjectClass -Path $ObjectScriptRoot
+        Write-Verbose "...'$ObjectClass' table created."
+    }
+
+    # Run all the freshly generated scripts to create a table per object class
+    $ObjectClassScriptPaths = (
+                            Get-ChildItem -Path $ObjectScriptRoot -Filter *.sql | 
+                            Select-Object -ExpandProperty FullName
+                          )
+
+    Write-Verbose "Executing all object class SQL scripts to create [object] schema tables..."
+    foreach($ObjectClassScriptPath in $ObjectClassScriptPaths)
+    {
+        Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName "Table" -Path $ObjectClassScriptPath
+    }
+    Write-Verbose "...[object] schema tables created."
 }
