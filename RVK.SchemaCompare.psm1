@@ -1181,19 +1181,13 @@ function Install-SchemaCompare
     {
         throw $_.Exception
     }
-    return 
     
     # Locate the root paths of database object creation scripts
     Write-Verbose "Setting database object script paths..."
     $ModuleRoot = $PSScriptRoot
     $SchemasPath = "$ModuleRoot\Database\Schemas"
-    if(-not (Test-Path $SchemasPath))
-    {
-        throw "The module root does not contain a Schemas directory. Reinstall the module and try again."
-    }
-
     $DataTypesPath = "$ModuleRoot\Database\Types"
-    $TablesPath = "$ModuleRoot\Database\Tables"
+    $TablesPath = "$ModuleRoot\Database\Tables\config"
     $ProceduresPath = "$ModuleRoot\Database\Procedures"
     $FunctionsPath = "$ModuleRoot\Database\Functions"
     $ForeignKeysPath = "$ModuleRoot\Database\Foreign_Keys"
@@ -1201,12 +1195,22 @@ function Install-SchemaCompare
     $RootPaths = @($SchemasPath, $DataTypesPath, $TablesPath, $ProceduresPath, $FunctionsPath, $ForeignKeysPath)
     Write-Verbose "...script paths set"
 
+    Write-Verbose "Validating script paths..."
+    $InvalidPaths = $RootPaths | Where-Object -FilterScript {-not (Test-Path $_)}
+    if($InvalidPaths -ne $null)
+    {
+        throw "The following paths are invalid: $($InvalidPaths -join "`n")"
+    }
+    else 
+    {
+        Write-Verbose "...script paths valid."
+    }
+
     # Install database objects by running all SQL scripts at the specified locations
     Write-Verbose "Executing all SQL scripts in each object script path to create [config] schema objects..."
     foreach($RootPath in $RootPaths)
     {
         # Strip the s at the end if it exists to get object type name
-
         $ObjectTypeName = (Split-Path -Path $RootPath -Leaf).TrimEnd('s')
         Write-Verbose "Creating objects of type $ObjectTypeName..."
 
@@ -1218,14 +1222,14 @@ function Install-SchemaCompare
 
         if($Paths -ne $null)
         {
-            foreach($Path in $Paths)
-            {
-                Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName $ObjectTypeName -Path $Path
-            }
+            $Paths | 
+            Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName $ObjectTypeName -Verbose:($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
         }
         Write-Verbose "$ObjectTypeName objects created."
     }
     Write-Verbose "...[config] schema objects created."
+
+    return 
 
     # Initialize the table used for generating numeric IDs of db rows
     Write-Verbose "Initializing ID generator..."

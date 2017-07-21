@@ -128,6 +128,6 @@ GO
 
 --DECLARE @li_object_class_id [config].[ID];
 
-EXEC [config].[p_create_object_column_code] 
-	@as_object_class_name = 'table'
-;
+--EXEC [config].[p_create_object_column_code] 
+--	@as_object_class_name = 'table'
+--;

@@ -1,6 +1,6 @@
-DROP TABLE IF EXISTS [instance].[database];
+DROP TABLE IF EXISTS [config].[database];
 
-CREATE TABLE [instance].[database]
+CREATE TABLE [config].[database]
 (
 	[database_id] INT NOT NULL 
 ,	[database_name] SYSNAME NOT NULL
