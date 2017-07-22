@@ -1,0 +1,105 @@
+<objectClasses>
+    <objectClass>
+        <name> table </name>
+        <source> 
+            'sys.tables AS {alias}'
+        </source>
+        <source_alias> T </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> tables </view_name>
+    </objectClass>
+
+    <objectClass>
+        <name> table_column </name>
+        <source> 
+            'sys.columns AS {alias} WHERE EXISTS 
+             (
+                SELECT * 
+                FROM sys.tables 
+                WHERE sys.tables.[object_id] = {alias}.[object_id]
+             )
+            '
+        </source>
+        <source_alias> C </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> columns </view_name>
+    </objectClass>
+
+    <objectClass>
+        <name> view </name>
+        <source> 
+            'sys.views AS {alias}' 
+        </source>
+        <source_alias> V </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> views </view_name>
+    </objectClass>
+
+    <objectClass>
+        <name> view_column </name>
+        <source> 
+            'sys.columns AS {alias} WHERE EXISTS 
+            (
+                SELECT * 
+                FROM sys.views 
+                WHERE sys.views.[object_id] = {alias}.[object_id]
+            )'
+        </source>
+        <source_alias> C </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> columns </view_name>
+    </objectClass>
+
+    <objectClass>
+        <name> procedure </name>
+        <source> 
+            'sys.procedures AS {alias}'
+        </source>
+        <source_alias> P </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> procedures </view_name>
+    </objectClass>
+
+    <objectClass>
+        <name> procedure_param </name>
+        <source> 
+            'sys.parameters AS {alias} WHERE EXISTS
+            (
+                SELECT * 
+                FROM sys.procedures 
+                WHERE sys.procedures.[object_id] = {alias}.[object_id]
+            )'
+        </source>
+        <source_alias> P </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> parameters </view_name>
+    </objectClass>
+
+    <objectClass>
+        <name> function </name>
+        <source> 
+            'sys.object AS {alias} WHERE [type] = N''FN'''
+        </source>
+        <source_alias> F </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> object </view_name>
+    </objectClass>
+
+    <objectClass>
+        <name> function_param </name>
+        <source> 
+            'sys.parameters AS {alias} WHERE EXISTS
+             (
+                SELECT * 
+                FROM sys.objects 
+                WHERE sys.objects.[object_id] = {alias}.[object_id] 
+                        AND 
+                        sys.objects.[type] = ''FN''
+             )'
+        </source>
+        <source_alias> P </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> parameters </view_name>
+    </objectClass>
+
+</objectClasses>

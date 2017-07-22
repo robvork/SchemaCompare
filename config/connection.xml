@@ -1,0 +1,4 @@
+<connection>
+    <ServerInstance> ASPIRING\SQL16 </ServerInstance>
+    <Database> SchemaCompare </Database>
+</connection>

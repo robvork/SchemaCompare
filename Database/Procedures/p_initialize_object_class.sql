@@ -4,9 +4,12 @@ GO
 CREATE PROCEDURE [config].[p_initialize_object_class]
 (
 	@ai_debug_level INT = 0
+,	@as_input_table_name SYSNAME
 )
 AS
 BEGIN
+	DECLARE @ls_sql NVARCHAR(MAX); 
+
 	EXEC [config].[p_initialize_next_id]
 		@as_schema_name = 'config'
 	,	@as_table_name = 'object_class'
@@ -41,126 +44,38 @@ BEGIN
 	,	object_class_name NVARCHAR(128) NOT NULL
 	,	object_class_source NVARCHAR(MAX) NOT NULL
 	,	object_class_source_alias NVARCHAR(10) NOT NULL
-	,	object_class_is_schema_class BIT NOT NULL
+	,	view_schema_id [config].[ID] NOT NULL
+	,	view_object_id [config].[ID] NOT NULL
 	);
 
-	WITH object_classes AS
+	SET @ls_sql = CONCAT 
 	(
+		N'
+		INSERT INTO #object_class 
+		(
+			row_num
+		,	object_class_name 
+		,	object_class_source
+		,	object_class_source_alias 
+		,	view_schema_id
+		,	view_object_id
+		)
 		SELECT 
-			[object_class_name] 
+			ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
+		,	[object_class_name] 
 		,	[object_class_source]
 		,	[object_class_source_alias]
-		,	[object_class_is_schema_class] 
-		FROM 
-		(
-			VALUES 
-			(
-					'table'
-				,	'sys.tables AS <alias>'
-				,	'T'
-				,	1
-			)
-			,
-			(
-					'table_column'
-				,	'sys.columns AS <alias> WHERE EXISTS 
-					(
-						SELECT * 
-						FROM sys.tables 
-						WHERE sys.tables.[object_id] = <alias>.[object_id]
-					)'
-				,	'C'
-				,	0
-			)
-			,
-			(
-					'view'
-				,	'sys.views AS <alias>'
-				,	'V'
-				,	1
-			)
-			,
-			(
-					'view_column'
-				,	'sys.columns AS <alias> WHERE EXISTS 
-					(
-						SELECT * 
-						FROM sys.views 
-						WHERE sys.views.[object_id] = <alias>.[object_id]
-					)'
-				,	'C'
-				,	0
-			)
-			,
-			(
-					'uddt'
-				,	'sys.types AS <alias>'
-				,	'T'
-				,	1
-			)
-			,
-			(
-					'proc'
-				,	'sys.procedures AS <alias>'
-				,	'P'
-				,	1
-			)
-			,
-			(
-					'proc_param'
-				,	'sys.parameters AS <alias> WHERE EXISTS
-					(
-						SELECT * 
-						FROM sys.procedures 
-						WHERE sys.procedures.[object_id] = <alias>.[object_id]
-					)'
-				,	'P'
-				,	0
-			)
-			,
-			(
-					'function'
-				,	'sys.object AS <alias> WHERE [type] = N''FN'''
-				,	'F'
-				,	1
-			)
-			,
-			(
-					'function_param'
-				,	'sys.parameters AS <alias> WHERE EXISTS
-					(
-						SELECT * 
-						FROM sys.objects 
-						WHERE sys.objects.[object_id] = <alias>.[object_id] 
-							  AND 
-							  sys.objects.[type] = ''FN''
-					)'
-				,	'P'
-				,	0
-			)
-		)  AS object_class_values
-			(
-				[object_class_name] 
-			,	[object_class_source]
-			,	[object_class_source_alias]
-			,	[object_class_is_schema_class] 
-			)
-	)
-	INSERT INTO #object_class 
-	(
-		row_num
-	,	object_class_name 
-	,	object_class_source
-	,	object_class_source_alias 
-	,	object_class_is_schema_class 
-	)
-	SELECT 
-		ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
-	,	[object_class_name] 
-	,	[object_class_source]
-	,	[object_class_source_alias]
-	,	[object_class_is_schema_class] 
-	FROM object_classes
+		,	[object_class_is_schema_class]
+		,	[view_schema_id] 
+		,	[view_object_id] 
+		FROM ', @as_input_table_name, N'
+		;'
+	);
+	
+	IF @ai_debug_level > 0
+		PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
+	
+	EXEC(@ls_sql);
 	
 	IF @ai_debug_level > 1
 	BEGIN
@@ -194,14 +109,14 @@ BEGIN
 	,	[object_class_name]
 	,	[object_class_source]
 	,	[object_class_source_alias]
-	,	[object_class_is_schema_class]
 	)
 	SELECT 
 		[row_id]
 	,	[object_class_name]
 	,	[object_class_source]
 	,	[object_class_source_alias]
-	,	[object_class_is_schema_class]
+	,	[view_schema_id]
+	,	[view_object_id] 
 	FROM 
 		#object_class
 	;

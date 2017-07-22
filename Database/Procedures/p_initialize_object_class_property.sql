@@ -340,6 +340,6 @@ END;
 
 --SELECT * FROM [config].[object_class]
 --SELECT * FROM [config].[system_type]
-SELECT * FROM [config].[object_class_property]
+-- SELECT * FROM [config].[object_class_property]
 
-EXEC [config].[p_initialize_object_class_property]
+-- EXEC [config].[p_initialize_object_class_property]

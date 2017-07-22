@@ -1,0 +1,5 @@
+object_class_name, subobject_class_name
+table, table_column
+view, view_column
+procedure, procedure_param
+function, function_param

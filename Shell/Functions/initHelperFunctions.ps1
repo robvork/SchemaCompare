@@ -47,6 +47,11 @@ function Initialize-SchemaCompareSystemType
     Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
 
+function Initialize-SchemaCompareSystemView 
+{
+    
+}
+
 function Initialize-SchemaCompareObjectClassProperty
 {
     [CmdletBinding()]
@@ -55,6 +60,6 @@ function Initialize-SchemaCompareObjectClassProperty
         [String] $ServerInstance
     ,   [String] $Database
     )
-    $Query = "EXECUTE [config].[p_initialize_system_type]"
+    $Query = "EXECUTE [config].[p_initialize_object_class_property]"
     Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }

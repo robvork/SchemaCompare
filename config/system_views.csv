@@ -1,0 +1,6 @@
+view_schema, view_name 
+sys, tables
+sys, views 
+sys, parameters
+sys, procedures
+sys, objects

@@ -4,11 +4,13 @@ GO
 CREATE PROCEDURE [config].[p_initialize_object_to_subobject]
 (
 	@ai_debug_level INT = 0
+,	@as_input_table_name SYSNAME
 )
 AS
 BEGIN
 	BEGIN TRY
 		DECLARE @ls_error_msg NVARCHAR(MAX);
+		DECLARE @ls_sql NVARCHAR(MAX); 
 
 		CREATE TABLE #object_to_subobject
 		(
@@ -42,17 +44,29 @@ BEGIN
 			SELECT * FROM #object_name_to_id;
 		END;
 
-		INSERT INTO #object_to_subobject
+		SET @ls_sql = 
+		CONCAT 
 		(
-			[object_class_name] 
-		,	[subobject_class_name]
-		)
-		VALUES 
-			('table', 'table_column')
-		,	('view', 'view_column')
-		,	('proc', 'proc_param')
-		,	('function', 'function_param')
-		;
+			N'
+			INSERT INTO 
+				#object_to_subobject
+			(
+				[object_class_name] 
+			,	[subobject_class_name]
+			)
+			SELECT 
+				[object_class_name]
+			,	[subobject_class_name]
+			FROM 
+			 ', @as_input_table_name, N'
+			;
+			'
+		); 
+
+		IF @ai_debug_level > 0
+			PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
+	
+		EXEC(@ls_sql);
 
 		IF @ai_debug_level > 1
 		BEGIN
