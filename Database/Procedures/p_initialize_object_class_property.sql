@@ -24,9 +24,8 @@ BEGIN
 
 		CREATE TABLE #object_class_property
 		(
-			row_num INT NOT NULL PRIMARY KEY
-		,	row_id INT NULL
-		,	object_class_id INT NOT NULL
+			object_class_id INT NOT NULL
+		,	object_class_property_id INT NOT NULL
 		,	object_class_property_name NVARCHAR(128) NOT NULL
 		,	object_class_property_type_name SYSNAME NOT NULL
 		,	object_class_property_is_nullable BIT NOT NULL
@@ -81,8 +80,7 @@ BEGIN
 				[config].[object_class] AS OC
 			INNER JOIN sys.all_views AS V
 				ON SCHEMA_ID(OC.[view_schema_name]) = V.[schema_id] 
-				AND OC.[view_name] = V.[name]
-					
+				AND OC.[view_name] = V.[name]		
 		)
 		INSERT INTO #view_column
 		(
@@ -132,10 +130,11 @@ BEGIN
 			SELECT * FROM #view_column;
 		END;
 
-		INSERT INTO #object_class_property
+		INSERT INTO 
+			#object_class_property
 		(
-			[row_num]
-		,	[object_class_id]
+			[object_class_id]
+		,	[object_class_property_id]
 		,	[object_class_property_name]
 		,	[object_class_property_type_name]
 		,	[object_class_property_has_length]
@@ -143,8 +142,12 @@ BEGIN
 		,	[object_class_property_is_nullable]
 		)
 		SELECT 
-			ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
-		,	OC.[object_class_id]
+			OC.[object_class_id]
+		,	ROW_NUMBER() OVER 
+			(
+				PARTITION BY OC.[object_class_id]
+				ORDER BY (SELECT NULL)
+			)	
 		,	VC.[view_column_name]
 		,	VC.[view_column_type_name]
 		,	VC.[view_column_type_has_length]
@@ -152,18 +155,19 @@ BEGIN
 		,	VC.[view_column_is_nullable]
 		FROM 
 			[config].[object_class] 
-				AS OC
-		INNER JOIN sys.all_views AS V
-			ON SCHEMA_ID(OC.[view_schema_name]) = V.[schema_id]
-			   AND 
-			   OC.[view_name] = V.[name]
+			AS OC
+		INNER JOIN 
+			sys.all_views 
+			AS V
+				ON SCHEMA_ID(OC.[view_schema_name]) = V.[schema_id]
+				   AND 
+				   OC.[view_name] = V.[name]
 		INNER JOIN 
 			#view_column
-				AS VC 
-			ON V.[schema_id] = VC.[view_schema_id]
-			   AND 
-			   V.[object_id] = VC.[view_object_id]
-				
+			AS VC 
+				ON V.[schema_id] = VC.[view_schema_id]
+				   AND 
+				   V.[object_id] = VC.[view_object_id]
 		;
 		
 		IF @ai_debug_level > 1
@@ -198,7 +202,7 @@ BEGIN
 		)
 		SELECT 
 			[object_class_id]
-		,	[row_id]
+		,	[object_class_property_id]
 		,	[object_class_property_name]
 		,	[object_class_property_type_name]
 		,	[object_class_property_has_length]
