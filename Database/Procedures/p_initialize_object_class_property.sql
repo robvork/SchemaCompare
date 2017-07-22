@@ -27,52 +27,25 @@ BEGIN
 			row_num INT NOT NULL PRIMARY KEY
 		,	row_id INT NULL
 		,	object_class_id INT NOT NULL
-		,	object_class_property_system_type_id INT NOT NULL
 		,	object_class_property_name NVARCHAR(128) NOT NULL
-		,	object_class_property_is_nullable NVARCHAR(128) NOT NULL
+		,	object_class_property_type_name SYSNAME NOT NULL
+		,	object_class_property_is_nullable BIT NOT NULL
 		,	object_class_property_has_length BIT NOT NULL
 		,	object_class_property_length INT NULL
-		,	object_class_property_is_enabled BIT NOT NULL DEFAULT 1
+		,	object_class_property_is_enabled BIT NOT NULL DEFAULT 0
 		);
 
-		CREATE TABLE #view
+		CREATE TABLE #view_column
 		(
-			[view_object_id] INT NOT NULL PRIMARY KEY
-		,	[schema_name] SYSNAME NOT NULL
-		,	[view_name] SYSNAME NOT NULL
-		);
-
-		CREATE TABLE #view_property
-		(
-			view_object_id INT NOT NULL 
-		,	view_property_system_type_id INT NOT NULL
-		,	view_property_name NVARCHAR(128) NOT NULL
-		,	view_property_is_nullable NVARCHAR(128) NOT NULL
-		,	view_property_has_length BIT NOT NULL
-		,	view_property_length INT NULL
-		,	PRIMARY KEY(view_object_id, view_property_name)
-		);
-
-		CREATE TABLE #object_class_to_view
-		(
-			object_class_id INT NOT NULL
+			view_schema_id INT NOT NULL
 		,	view_object_id INT NOT NULL
-		); 
-
-		CREATE TABLE #system_type_to_schema_compare_type
-		(
-			system_type_id INT NOT NULL
-		,	schema_compare_type_id INT NOT NULL UNIQUE
-		,	PRIMARY KEY(system_type_id, schema_compare_type_id)
+		,	view_column_name NVARCHAR(128) NOT NULL
+		,	view_column_type_name NVARCHAR(128) NOT NULL
+		,	view_column_type_has_length BIT NOT NULL
+		,	view_column_type_length INT NULL
+		,	view_column_is_nullable NVARCHAR(128) NOT NULL
+		,	PRIMARY KEY(view_schema_id, view_object_id, view_column_name)
 		);
-		/*
-			sys.tables
-			sys.views
-			sys.columns
-			sys.procedures
-			sys.objects
-			sys.parameters
-		*/
 
 		SET @li_system_type_id_nchar = 
 		(
@@ -99,56 +72,33 @@ BEGIN
 			WHERE [name] = 'VARCHAR'
 		);
 		
-		WITH views_to_insert AS
+		WITH object_class_views([schema_id], [object_id]) AS 
 		(
-			SELECT [schema_name], [view_name] 
+			SELECT DISTINCT 
+				V.[schema_id] 
+			,	V.[object_id] 
 			FROM 
-			(
-				VALUES 
-				('sys', 'tables')
-			,	('sys', 'views')
-			,	('sys', 'procedures')
-			,	('sys', 'columns')
-			,	('sys', 'parameters')
-			,	('sys', 'types')
-			) AS view_names_values ([schema_name], [view_name])
+				[config].[object_class] AS OC
+			INNER JOIN sys.all_views AS V
+				ON SCHEMA_ID(OC.[view_schema_name]) = V.[schema_id] 
+				AND OC.[view_name] = V.[name]
+					
 		)
-		INSERT INTO #view
+		INSERT INTO #view_column
 		(
-			[view_object_id]
-		,	[schema_name]
-		,	[view_name]
+			[view_schema_id]
+		,	[view_object_id]
+		,	[view_column_name]
+		,	[view_column_type_name]
+		,	[view_column_type_has_length]
+		,	[view_column_type_length]
+		,	[view_column_is_nullable]
 		)
 		SELECT 
-			V.[object_id] 
-		,	VI.[schema_name] 
-		,	VI.[view_name] 
-		FROM views_to_insert AS VI 
-			 INNER JOIN sys.all_views AS V
-				ON VI.[view_name] = V.[name]
-		WHERE V.[schema_id] = SCHEMA_ID('sys')
-		; 
-
-		IF @ai_debug_level > 1
-		BEGIN
-			SELECT '#view';
-			SELECT * FROM #view; 
-		END; 
-
-		INSERT INTO #view_property
-		(
-			[view_object_id]
-		,	[view_property_name]
-		,	[view_property_system_type_id]
-		,	[view_property_is_nullable]
-		,	[view_property_has_length]
-		,	[view_property_length]
-		)
-		SELECT 
-			V.[view_object_id]
+			V.[schema_id]
+		,	V.[object_id]
 		,	C.[name] 
-		,	C.[system_type_id]
-		,	C.[is_nullable]
+		,	T.[name]
 		,	CASE 
 				WHEN C.[system_type_id] IN (
 												@li_system_type_id_nchar
@@ -161,100 +111,33 @@ BEGIN
 						 0
 			END
 		,	CASE 
-				WHEN C.[system_type_id] IN (@li_system_type_id_nchar, @li_system_type_id_nvarchar)
+				WHEN C.[user_type_id] IN (@li_system_type_id_nchar, @li_system_type_id_nvarchar)
 					THEN C.[max_length]/2
-				WHEN C.[system_type_id] IN (@li_system_type_id_char, @li_system_type_id_varchar)
+				WHEN C.[user_type_id] IN (@li_system_type_id_char, @li_system_type_id_varchar)
 					THEN C.[max_length] 
 				ELSE 
 					NULL 
 			END 
-		FROM #view AS V 
+		,	C.[is_nullable]
+		FROM object_class_views AS V 
 			INNER JOIN sys.all_columns AS C
-				ON V.[view_object_id] = C.[object_id]
+				ON V.[object_id] = C.[object_id]
+			INNER JOIN sys.types AS T
+				ON C.[user_type_id] = T.[user_type_id]
 		;
 
 		IF @ai_debug_level > 1
 		BEGIN
 			SELECT '#view_property';
-			SELECT * FROM #view_property;
+			SELECT * FROM #view_column;
 		END;
-
-		WITH object_class_name_to_view_name AS
-		(
-			SELECT [object_class_name]
-			,	   [schema_name] 
-			,	   [view_name] 
-			FROM
-			(
-				VALUES
-				('table', 'sys', 'tables') 
-			,	('view', 'sys', 'views')
-			,	('table_column', 'sys', 'columns')
-			,	('view_column', 'sys', 'columns')
-			,	('uddt', 'sys', 'types')
-			,	('proc', 'sys', 'procedures')
-			,	('proc_param', 'sys', 'parameters')
-			,	('func', 'sys', 'objects')
-			,	('func_param', 'sys', 'parameters')
-			) AS object_class_name_to_view_name_values 
-				 (
-					[object_class_name]
-				 ,  [schema_name] 
-				 ,	[view_name] 
-				 )
-		)
-		INSERT INTO #object_class_to_view
-		(
-			[object_class_id]
-		,	[view_object_id]
-		)
-		SELECT 
-			OC.[object_class_id]
-		,	V.[view_object_id] 
-		FROM object_class_name_to_view_name AS OCN2VN
-			INNER JOIN [config].[object_class] AS OC
-				ON OCN2VN.object_class_name = OC.object_class_name
-			INNER JOIN #view AS V
-				ON OCN2VN.[schema_name] = V.[schema_name]
-				   AND 
-				   OCN2VN.[view_name] = V.[view_name]
-		;
-
-		IF @ai_debug_level > 1
-		BEGIN
-			SELECT '#object_class_to_view';
-			SELECT * FROM #object_class_to_view;
-		END; 
-
-		INSERT INTO #system_type_to_schema_compare_type
-		(
-			[system_type_id]
-		,	[schema_compare_type_id]
-		)
-		SELECT 
-			T.[system_type_id] 
-		,	ST.[system_type_id] 
-		FROM 
-			[config].[system_type] 
-				AS ST 
-		INNER JOIN 
-			sys.types 
-				AS T 
-				ON ST.[system_type_name] = T.[name] 
-		;
-
-		IF @ai_debug_level > 1
-		BEGIN
-			SELECT '#system_type_to_schema_compare_type';
-			SELECT * FROM #system_type_to_schema_compare_type;
-		END; 
 
 		INSERT INTO #object_class_property
 		(
 			[row_num]
 		,	[object_class_id]
 		,	[object_class_property_name]
-		,	[object_class_property_system_type_id]
+		,	[object_class_property_type_name]
 		,	[object_class_property_has_length]
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
@@ -262,26 +145,25 @@ BEGIN
 		SELECT 
 			ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
 		,	OC.[object_class_id]
-		,	VP.[view_property_name]
-		,	T.[schema_compare_type_id]
-		,	VP.view_property_has_length
-		,	VP.view_property_length
-		,	VP.view_property_is_nullable
+		,	VC.[view_column_name]
+		,	VC.[view_column_type_name]
+		,	VC.[view_column_type_has_length]
+		,	VC.[view_column_type_length]
+		,	VC.[view_column_is_nullable]
 		FROM 
 			[config].[object_class] 
 				AS OC
+		INNER JOIN sys.all_views AS V
+			ON SCHEMA_ID(OC.[view_schema_name]) = V.[schema_id]
+			   AND 
+			   OC.[view_name] = V.[name]
 		INNER JOIN 
-			#object_class_to_view 
-				AS OC2V
-				ON OC.object_class_id = OC2V.object_class_id
-		INNER JOIN 
-			#view_property
-				AS VP
-				ON OC2V.view_object_id = VP.view_object_id
-		INNER JOIN 
-			#system_type_to_schema_compare_type 
-				AS T
-				ON VP.view_property_system_type_id = T.system_type_id
+			#view_column
+				AS VC 
+			ON V.[schema_id] = VC.[view_schema_id]
+			   AND 
+			   V.[object_id] = VC.[view_object_id]
+				
 		;
 		
 		IF @ai_debug_level > 1
@@ -308,7 +190,7 @@ BEGIN
 			[object_class_id]
 		,	[object_class_property_id] 
 		,	[object_class_property_name]
-		,	[object_class_property_system_type_id]
+		,	[object_class_property_type_name]
 		,	[object_class_property_has_length]
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
@@ -318,7 +200,7 @@ BEGIN
 			[object_class_id]
 		,	[row_id]
 		,	[object_class_property_name]
-		,	[object_class_property_system_type_id]
+		,	[object_class_property_type_name]
 		,	[object_class_property_has_length]
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
@@ -338,8 +220,3 @@ BEGIN
 	END CATCH;
 END;
 
---SELECT * FROM [config].[object_class]
---SELECT * FROM [config].[system_type]
--- SELECT * FROM [config].[object_class_property]
-
--- EXEC [config].[p_initialize_object_class_property]

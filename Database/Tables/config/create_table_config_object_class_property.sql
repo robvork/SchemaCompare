@@ -4,8 +4,8 @@ CREATE TABLE [config].[object_class_property]
 (
 	[object_class_id] [config].[ID]
 ,	[object_class_property_id] [config].[ID]
-,	[object_class_property_system_type_id] [config].[ID]
 ,	[object_class_property_name] [config].[NAME] NOT NULL
+,	[object_class_property_type_name] SYSNAME
 ,	[object_class_property_is_nullable] BIT NOT NULL
 ,	[object_class_property_has_length] BIT NOT NULL
 ,	[object_class_property_length] INT NULL

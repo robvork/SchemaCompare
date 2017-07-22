@@ -1237,6 +1237,8 @@ function Install-SchemaCompare
     }
     Write-Verbose "...[config] schema objects created."    
 
+    return 
+
     # Initialize the table used for generating numeric IDs of db rows
     Write-Verbose "Initializing ID generator..."
     Initialize-SchemaCompareIDGenerator -ServerInstance $ServerInstance -Database $Database 
@@ -1252,17 +1254,10 @@ function Install-SchemaCompare
     Initialize-SchemaCompareObjectToSubobject -ServerInstance $ServerInstance -Database $Database
     Write-Verbose "...object to subobject table initialized."
 
-    # Initialize the table that stores the types that will appear in the automatically generated table definitions
-    Write-Verbose "Initializing system type table..."
-    Initialize-SchemaCompareSystemType -ServerInstance $ServerInstance -Database $Database
-    Write-Verbose "...system type table initialized."
-
     # Initialize the table that specifies the fields and their properties (e.g. data types, nullability) that will be eligible for comparison for each object class
     Write-Verbose "Initializing object class property table..."
     Initialize-SchemaCompareObjectClassProperty -ServerInstance $ServerInstance -Database $Database
     Write-Verbose "...object class property table initialized."
-
-    return 
     
     # Generate the table create scripts for each object class and place them in $ModuleRoot\Database\Tables\object
     $ObjectClasses = Get-SchemaCompareObjectClass

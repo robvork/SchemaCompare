@@ -62,13 +62,12 @@ BEGIN
 		)
 		SELECT 
 			ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
-		,	[object_class_name] 
-		,	[object_class_source]
-		,	[object_class_source_alias]
-		,	[object_class_is_schema_class]
-		,	[view_schema_id] 
-		,	[view_object_id] 
-		FROM ', @as_input_table_name, N'
+		,	I.[object_class_name] 
+		,	I.[object_class_source]
+		,	I.[object_class_source_alias]
+		,	I.[view_schema]
+		,	I.[view_name] 
+		FROM ', @as_input_table_name, N' AS I
 		;'
 	);
 	
