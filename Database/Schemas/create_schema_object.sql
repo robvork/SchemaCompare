@@ -1,0 +1,5 @@
+DROP SCHEMA IF EXISTS [object]; 
+GO
+
+CREATE SCHEMA [object];
+GO

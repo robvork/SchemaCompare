@@ -1226,7 +1226,7 @@ function Install-SchemaCompare
         if($Paths -ne $null)
         {
             $Paths | 
-            Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName $ObjectTypeName -Verbose:($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+            Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName $ObjectTypeName -Verbose:($PSCmdlet.MyInvocation.BoundParameters["Verbose"] -and $PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
             Write-Verbose "$ObjectTypeName objects created."
         }
         else 
@@ -1256,18 +1256,25 @@ function Install-SchemaCompare
     Write-Verbose "Initializing object class property table..."
     Initialize-SchemaCompareObjectClassProperty -ServerInstance $ServerInstance -Database $Database
     Write-Verbose "...object class property table initialized."
-
-    return
     
     # Generate the table create scripts for each object class and place them in $ModuleRoot\Database\Tables\object
-    $ObjectClasses = Get-SchemaCompareObjectClass
+    $ObjectClasses = Get-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database
     $ObjectScriptRoot = "$ModuleRoot\Database\Tables\object"
+    if(-not (Test-Path $ObjectScriptRoot))
+    {
+        New-Item -Path $ObjectScriptRoot -ItemType Directory | Out-Null 
+    }
+    else 
+    {
+        Get-ChildItem -Path $ObjectScriptRoot -Filter create_table_*.sql | Remove-Item 
+    }
 
     Write-Verbose "Generating table create scripts for each object class..."
     foreach($ObjectClass in $ObjectClasses)
     {
-        Write-Verbose "Creating script for object class '$ObjectClass'..."
-        New-SchemaCompareObjectClassTableScript -ServerInstance $ServerInstance -Database $Database -Name $ObjectClass -Path $ObjectScriptRoot
+        $ObjectClassName = $ObjectClass | Select-Object -ExpandProperty object_class_name
+        Write-Verbose "Creating script for object class '$ObjectClassName'..."
+        New-SchemaCompareObjectClassTableScript -ServerInstance $ServerInstance -Database $Database -Name $ObjectClassName -Path $ObjectScriptRoot
         Write-Verbose "...'$ObjectClass' table created."
     }
 

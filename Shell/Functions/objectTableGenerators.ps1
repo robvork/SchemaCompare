@@ -55,6 +55,8 @@ function Get-SchemaCompareObjectClassTableSQL
 
     # Put all objects into an [object] schema table bearing the object class name
     $TableSQL = @(
+                    "DROP TABLE IF EXISTS [object].[$Name];"
+                    ""
                     "CREATE TABLE [object].[$Name]" 
                     "(" 
                         $ColumnSQL 
@@ -80,5 +82,5 @@ function New-SchemaCompareObjectClassTableScript
 
     $ScriptName = "create_table_object_${Name}.sql"
     $TableCreateSQL = Get-SchemaCompareObjectClassTableSQL -ServerInstance $ServerInstance -Database $Database -Name $Name 
-    New-Item -Path $Path -Name $ScriptName -Value $TableCreateSQL
+    New-Item -Path $Path -Name $ScriptName -Value $TableCreateSQL | Out-Null 
 }

@@ -1,7 +1,7 @@
-DROP PROCEDURE IF EXISTS [db].[p_compare_db];
+DROP PROCEDURE IF EXISTS [config].[p_compare_db];
 GO
 
-CREATE PROCEDURE [db].[p_compare_db]
+CREATE PROCEDURE [config].[p_compare_db]
 (
 	@as_database_name_left  [config].[name]
 

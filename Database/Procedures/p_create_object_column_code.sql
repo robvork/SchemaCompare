@@ -74,9 +74,9 @@ BEGIN TRY
 	SELECT 
 	CONCAT 
 	(
-		OCP.[object_class_property_name]
+		CONCAT(N'[', OCP.[object_class_property_name], N']')
 	,	N' '
-	,	ST.[system_type_name]
+	,   UPPER(OCP.[object_class_property_type_name])
 	,	CASE 
 			WHEN OCP.[object_class_property_has_length] = 1 
 				THEN CONCAT(N'(', OCP.[object_class_property_length], N')')
@@ -92,13 +92,7 @@ BEGIN TRY
 		END 
 	) AS [column_sql]
 	FROM [config].[object_class_property] AS OCP
-		INNER JOIN [config].[system_type] AS ST
-			ON OCP.object_class_property_system_type_id 
-			   =
-			   ST.system_type_id
 	WHERE OCP.[object_class_id] = @ai_object_class_id
-		  AND 
-		  OCP.[object_class_property_is_enabled] = 1
 	;
 
 	

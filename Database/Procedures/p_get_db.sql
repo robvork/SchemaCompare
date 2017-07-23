@@ -1,7 +1,7 @@
-DROP PROCEDURE IF EXISTS [db].[p_get_db];
+DROP PROCEDURE IF EXISTS [config].[p_get_db];
 GO
 
-CREATE PROCEDURE [db].[p_get_db]
+CREATE PROCEDURE [config].[p_get_db]
 (
 	@as_database_name [config].[NAME]
 ,	@ab_db_exists BIT OUTPUT
