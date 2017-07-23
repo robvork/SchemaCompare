@@ -90,7 +90,7 @@ BEGIN TRY
 			N'WHERE OC1.object_class_id = '
 		,	@li_object_class_id
 		,	@ls_newline
-		,	N'  AND OC2.subobject_class_id = '
+		,	N'  AND OC2.object_class_id = '
 		,	@li_subobject_class_id
 		,	N';'
 			 );
@@ -128,6 +128,8 @@ BEGIN TRY
 		,	OC1.[object_class_name] 
 		,	OC2.[object_class_id] AS [subobject_class_id]
 		,	OC2.[object_class_name] AS [subobject_class_name]
+		,	O2S.[mapping_table_schema]
+		,	O2S.[mapping_table_name]
 		  FROM 
 			[config].[object_to_subobject]  AS O2S
 		  INNER JOIN [config].[object_class] AS OC1
@@ -165,10 +167,10 @@ END CATCH
 END;
 GO
 
-DECLARE @ls_object_class_name SYSNAME = NULL;
-DECLARE @ls_subobject_class_name SYSNAME = NULL;
+--DECLARE @ls_object_class_name SYSNAME = NULL;
+--DECLARE @ls_subobject_class_name SYSNAME = NULL;
 
-EXEC [config].[p_get_object_class_to_subobject_class] 
-	@as_object_class_name = @ls_object_class_name
-,	@as_subobject_class_name = @ls_subobject_class_name
-;
+--EXEC [config].[p_get_object_class_to_subobject_class] 
+--	@as_object_class_name = @ls_object_class_name
+--,	@as_subobject_class_name = @ls_subobject_class_name
+--;

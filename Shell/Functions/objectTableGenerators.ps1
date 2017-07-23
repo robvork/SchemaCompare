@@ -84,3 +84,43 @@ function New-SchemaCompareObjectClassTableScript
     $TableCreateSQL = Get-SchemaCompareObjectClassTableSQL -ServerInstance $ServerInstance -Database $Database -Name $Name 
     New-Item -Path $Path -Name $ScriptName -Value $TableCreateSQL | Out-Null 
 }
+
+function New-SchemaCompareObjectToSubobjectMappingTableScript
+{
+    [CmdletBinding()]
+    param
+    (
+        [string] $ServerInstance 
+    ,   
+        [string] $Database
+    ,
+        [string] $ObjectClassName
+    ,   
+        [string] $SubobjectClassName
+    ,   
+        [string] $Path
+    )
+
+    $ClassMapping = Get-SchemaCompareObjectClassToSubobjectClass -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName -SubobjectClassName $SubobjectClassName
+    $MappingTableSchema = ($ClassMapping.mapping_table_schema -replace "\[|\]", "")
+    $MappingTableName = ($ClassMapping.mapping_table_name -replace "\[|\]", "")
+
+    $TableSQL = "
+    DROP TABLE IF EXISTS [$MappingTableSchema].[$MappingTableName]; 
+    GO 
+
+    CREATE TABLE [$MappingTableSchema].[$MappingTableName]
+    (
+        [object_class_id] INT NOT NULL
+    ,   [subobject_class_id] INT NOT NULL
+    ,   CONSTRAINT pk_${MappingTableName} PRIMARY KEY
+        (
+            [object_class_id]
+        ,   [subobject_class_id]
+        )  
+    );
+    GO
+    "
+
+    New-Item -Path $Path -Name "create_table_${MappingTableSchema}_${MappingTableName}.sql" -Value $TableSQL -ItemType File | Out-Null
+}

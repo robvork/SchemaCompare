@@ -1127,6 +1127,50 @@ function Get-SchemaCompareObjectClass
     Invoke-SqlCmd2 @ConnectionParams -Query $Query -As PSObject
 }
 
+function Get-SchemaCompareObjectClassToSubobjectClass
+{
+    [CmdletBinding()]
+    param 
+    (
+        [Parameter(Mandatory=$True)]
+        [String] $ServerInstance 
+    ,
+        [Parameter(Mandatory=$True)]
+        [String] $Database 
+    ,
+        [AllowNull()]
+        [String] $ObjectClassName 
+    ,
+        [AllowNull()]
+        [String] $SubobjectClassName 
+    )
+
+    if($ObjectClassName -eq $null -or $ObjectClassName -eq "")
+    {
+        $ObjectClassName = "NULL"
+    }
+    else 
+    {
+        $ObjectClassName = "'$ObjectClassName'"
+    }
+
+    if($SubobjectClassName -eq $null -or $SubObjectClassName -eq "")
+    {
+        $SubobjectClassName = "NULL"
+    }
+    else 
+    {
+        $SubobjectClassName = "'$SubObjectClassName'"
+    }
+
+    $Query = "EXECUTE [config].[p_get_object_class_to_subobject_class]
+                @as_object_class_name = $ObjectClassName
+    ,           @as_subobject_class_name = $SubobjectClassName
+    ;"
+
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query -As PSObject
+}
+
 function Install-SchemaCompare
 {
     [CmdletBinding()]
@@ -1258,7 +1302,6 @@ function Install-SchemaCompare
     Write-Verbose "...object class property table initialized."
     
     # Generate the table create scripts for each object class and place them in $ModuleRoot\Database\Tables\object
-    $ObjectClasses = Get-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database
     $ObjectScriptRoot = "$ModuleRoot\Database\Tables\object"
     if(-not (Test-Path $ObjectScriptRoot))
     {
@@ -1270,13 +1313,25 @@ function Install-SchemaCompare
     }
 
     Write-Verbose "Generating table create scripts for each object class..."
+    $ObjectClasses = Get-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database
     foreach($ObjectClass in $ObjectClasses)
     {
         $ObjectClassName = $ObjectClass | Select-Object -ExpandProperty object_class_name
         Write-Verbose "Creating script for object class '$ObjectClassName'..."
         New-SchemaCompareObjectClassTableScript -ServerInstance $ServerInstance -Database $Database -Name $ObjectClassName -Path $ObjectScriptRoot
-        Write-Verbose "...'$ObjectClass' table created."
+        Write-Verbose "...'$ObjectClassName' table created."
     }
+    Write-Verbose "...object class table create scripts generated"
+
+    Write-Verbose "Generating table create scripts for object to subobject maps..."
+    $ObjectToSubobjectClasses = Get-SchemaCompareObjectClassToSubobjectClass -ServerInstance $ServerInstance -Database $Database
+    foreach($ObjectToSubobjectMapping in $ObjectToSubobjectClasses)
+    {
+        $ObjectClassName = $ObjectToSubobjectMapping.object_class_name
+        $SubobjectClassName = $ObjectToSubobjectMapping.subobject_class_name
+        New-SchemaCompareObjectToSubobjectMappingTableScript -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName -SubobjectClassName $SubobjectClassName -Path $ObjectScriptRoot
+    }
+    Write-Verbose "...object to subobject maps table create scripts generated"
 
     # Run all the freshly generated scripts to create a table per object class
     $ObjectClassScriptPaths = (

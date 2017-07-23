@@ -97,10 +97,19 @@ BEGIN
 		(
 			[object_class_id]
 		,	[subobject_class_id]
+		,	[mapping_table_schema]
+		,	[mapping_table_name]
 		)
 		SELECT 
 			[object_class_id]
 		,	[subobject_class_id] 
+		,	'object'
+		,	CONCAT
+			(
+			  object_class_name
+			, N'_to_'
+			, subobject_class_name
+			)
 		FROM 
 			#object_to_subobject
 		;
