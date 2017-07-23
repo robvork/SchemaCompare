@@ -98,7 +98,7 @@ BEGIN
 		,	C.[name] 
 		,	T.[name]
 		,	CASE 
-				WHEN C.[system_type_id] IN (
+				WHEN C.[user_type_id] IN (
 												@li_system_type_id_nchar
 										   ,	@li_system_type_id_nvarchar
 										   ,	@li_system_type_id_char 
@@ -140,10 +140,60 @@ BEGIN
 		,	[object_class_property_has_length]
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
+		,	[object_class_property_is_enabled]
 		)
+		-- Primary key of each object class table
+		-- server_id, database_id, object_id
 		SELECT 
 			OC.[object_class_id]
-		,	ROW_NUMBER() OVER 
+		,	id_props.[object_class_property_id]
+		,	id_props.[object_class_property_name]
+		,	'INT'
+		,	0 -- doesn't have length
+		,	NULL -- NULL length
+		,	0 -- is not nullable
+		,	0 -- is not enabled for comparison because the primary key is an arbitrarily assigned SchemaCompare entity
+				-- thus differences in values are not meaningful.
+		FROM 
+			[config].[object_class] AS OC
+			CROSS JOIN 
+			(
+				SELECT [object_class_property_name] 
+				,	   [object_class_property_id]
+				FROM 
+				(
+					VALUES 
+					('instance_id', 1)
+				,	('database_id', 2)
+				,	('object_id'  , 3)
+				) AS id_props ([object_class_property_name], [object_class_property_id])
+			)  AS id_props ([object_class_property_name], [object_class_property_id])
+
+		UNION ALL
+
+		-- all objects have a textual property 'name' for which (server_id, database_id, name) 
+			-- an alterate key for the table. This name is to be preferred in comparisons 
+			-- because it is the key data that comes from the original db, unlike the IDs which are generated
+			-- within schemacompare
+		SELECT 
+			OC.[object_class_id]
+		,	4 -- assign the next available object_property_id 
+		,	'name'
+		,	'SYSNAME'
+		,	0 -- doesn't have length
+		,	NULL -- undefined length
+		,	0 -- is not nullable since it is part of a candidate key
+		,	1 -- enabled. the 'name' is the minimal set of attributes for comparison.
+		FROM 
+			[config].[object_class] AS OC
+
+		UNION ALL 
+
+		SELECT 
+			OC.[object_class_id]
+		-- number each property arbitrarily separately for each object class
+		-- start the numbering at 2 so that property_id = 1 is always parent_object_id
+		,	4 + ROW_NUMBER() OVER 
 			(
 				PARTITION BY OC.[object_class_id]
 				ORDER BY (SELECT NULL)
@@ -153,6 +203,8 @@ BEGIN
 		,	VC.[view_column_type_has_length]
 		,	VC.[view_column_type_length]
 		,	VC.[view_column_is_nullable]
+		--	By default, disable all columns except parent_object_id and name
+		,	0
 		FROM 
 			[config].[object_class] 
 			AS OC
@@ -168,25 +220,9 @@ BEGIN
 				ON V.[schema_id] = VC.[view_schema_id]
 				   AND 
 				   V.[object_id] = VC.[view_object_id]
+		-- ignore any occurrences of the first 4 columns in the system views
+		WHERE (VC.[view_column_name] NOT IN ('server_id', 'database_id', 'object_id', 'name'))
 		;
-		
-		IF @ai_debug_level > 1
-		BEGIN
-			SELECT '#object_class_property BEFORE ID assignment';
-			SELECT * FROM #object_class_property;
-		END; 
-
-		EXEC [config].[p_get_next_id]
-			@as_schema_name = 'config' 
-		,	@as_table_name = 'object_class_property' 
-		,	@as_work_table_name = '#object_class_property'
-		;
-
-		IF @ai_debug_level > 1
-		BEGIN
-			SELECT '#object_class_property AFTER ID assignment';
-			SELECT * FROM #object_class_property;
-		END; 
 
 		INSERT INTO 
 			[config].[object_class_property]
@@ -215,11 +251,18 @@ BEGIN
 
 	END TRY
 	BEGIN CATCH
+		DECLARE @ls_newline NCHAR = NCHAR(13);
 		SET @ls_error_msg = 
-			CONCAT( ERROR_MESSAGE(), NCHAR(13)
-				  ,'Error Line: ', ERROR_LINE(), NCHAR(13)
-				  ,'Error Procedure: ', ERROR_PROCEDURE()
-				  );
+		CONCAT 
+		(
+			'{', @ls_newline 		 
+		,		 'ERROR MESSAGE: ', ERROR_MESSAGE(), @ls_newline
+		,		 'ERROR PROCEDURE: ', ERROR_PROCEDURE(), @ls_newline 
+		,		 'ERROR LINE: ', ERROR_LINE(), @ls_newline
+		,		 'ERROR SEVERITY: ', ERROR_SEVERITY(), @ls_newline 
+		,		 'ERROR STATE: ', ERROR_STATE(), @ls_newline
+		,	'}'
+		);
 		RAISERROR(@ls_error_msg, 16, 1);
 	END CATCH;
 END;

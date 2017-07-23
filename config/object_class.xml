@@ -82,7 +82,7 @@
         </source>
         <source_alias> F </source_alias>
         <view_schema> sys </view_schema>
-        <view_name> object </view_name>
+        <view_name> objects </view_name>
     </objectClass>
 
     <objectClass>

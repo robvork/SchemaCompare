@@ -20,30 +20,6 @@ BEGIN
 		,	[subobject_class_id] NVARCHAR(128) NULL
 		);
 
-		CREATE TABLE #object_name_to_id
-		(
-			[object_class_name] NVARCHAR(128) NOT NULL
-		,	[object_class_id] INT NOT NULL
-		);
-
-		INSERT INTO #object_name_to_id
-		(
-			[object_class_name] 
-		,	[object_class_id] 
-		)
-		SELECT 
-			[object_class_name] 
-		,	[object_class_id]
-		FROM 
-			[config].[object_class]
-		;
-
-		IF @ai_debug_level > 1
-		BEGIN
-			SELECT '#object_name_to_id';
-			SELECT * FROM #object_name_to_id;
-		END;
-
 		SET @ls_sql = 
 		CONCAT 
 		(
@@ -75,13 +51,13 @@ BEGIN
 		END;
 
 		UPDATE O2SO
-		SET O2SO.[object_class_id] = OID1.[object_class_id]
-		,	O2SO.[subobject_class_id] = OID2.[object_class_id]
+		SET O2SO.[object_class_id] = OC1.[object_class_id]
+		,	O2SO.[subobject_class_id] = OC2.[object_class_id]
 		FROM #object_to_subobject AS O2SO
-			INNER JOIN #object_name_to_id AS OID1
-				ON O2SO.[object_class_name] = OID1.[object_class_name]
-			INNER JOIN #object_name_to_id AS OID2
-				ON O2SO.[subobject_class_name] = OID2.[object_class_name]
+			INNER JOIN [config].[object_class] AS OC1
+				ON O2SO.[object_class_name] = OC1.[object_class_name]
+			INNER JOIN [config].[object_class] AS OC2
+				ON O2SO.[subobject_class_name] = OC2.[object_class_name]
 		;
 
 		IF @ai_debug_level > 1

@@ -1237,8 +1237,6 @@ function Install-SchemaCompare
     }
     Write-Verbose "...[config] schema objects created."    
 
-    return 
-
     # Initialize the table used for generating numeric IDs of db rows
     Write-Verbose "Initializing ID generator..."
     Initialize-SchemaCompareIDGenerator -ServerInstance $ServerInstance -Database $Database 
@@ -1246,18 +1244,20 @@ function Install-SchemaCompare
 
     # Initialize the table that contains the classes of objects being considered in the comparisons (e.g. tables, procedures, table columns, procedure parameters)
     Write-Verbose "Initializing object class table..."
-    Initialize-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database
+    Initialize-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\object_class.xml"
     Write-Verbose "...object class table initialized."
 
     # Initialize the table that links object classes to subobject classes (e.g. tables to columns, procedures to parameters)
     Write-Verbose "Initializing object to subobject table..."
-    Initialize-SchemaCompareObjectToSubobject -ServerInstance $ServerInstance -Database $Database
+    Initialize-SchemaCompareObjectToSubobject -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\object_class_to_subobject_class.csv"
     Write-Verbose "...object to subobject table initialized."
 
     # Initialize the table that specifies the fields and their properties (e.g. data types, nullability) that will be eligible for comparison for each object class
     Write-Verbose "Initializing object class property table..."
     Initialize-SchemaCompareObjectClassProperty -ServerInstance $ServerInstance -Database $Database
     Write-Verbose "...object class property table initialized."
+
+    return
     
     # Generate the table create scripts for each object class and place them in $ModuleRoot\Database\Tables\object
     $ObjectClasses = Get-SchemaCompareObjectClass

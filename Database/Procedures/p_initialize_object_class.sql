@@ -44,8 +44,8 @@ BEGIN
 	,	object_class_name NVARCHAR(128) NOT NULL
 	,	object_class_source NVARCHAR(MAX) NOT NULL
 	,	object_class_source_alias NVARCHAR(10) NOT NULL
-	,	view_schema_id [config].[ID] NOT NULL
-	,	view_object_id [config].[ID] NOT NULL
+	,	view_schema_name SYSNAME NOT NULL
+	,	view_name SYSNAME NOT NULL
 	);
 
 	SET @ls_sql = CONCAT 
@@ -57,15 +57,15 @@ BEGIN
 		,	object_class_name 
 		,	object_class_source
 		,	object_class_source_alias 
-		,	view_schema_id
-		,	view_object_id
+		,	view_schema_name
+		,	view_name
 		)
 		SELECT 
 			ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
 		,	I.[object_class_name] 
 		,	I.[object_class_source]
 		,	I.[object_class_source_alias]
-		,	I.[view_schema]
+		,	I.[view_schema_name]
 		,	I.[view_name] 
 		FROM ', @as_input_table_name, N' AS I
 		;'
@@ -108,14 +108,16 @@ BEGIN
 	,	[object_class_name]
 	,	[object_class_source]
 	,	[object_class_source_alias]
+	,	[view_schema_name] 
+	,	[view_name]
 	)
 	SELECT 
 		[row_id]
 	,	[object_class_name]
 	,	[object_class_source]
 	,	[object_class_source_alias]
-	,	[view_schema_id]
-	,	[view_object_id] 
+	,	[view_schema_name]
+	,	[view_name]
 	FROM 
 		#object_class
 	;
