@@ -1248,9 +1248,9 @@ function Install-SchemaCompare
     Write-Verbose "...object class table initialized."
 
     # Initialize the table that links object classes to subobject classes (e.g. tables to columns, procedures to parameters)
-    Write-Verbose "Initializing object to subobject table..."
-    Initialize-SchemaCompareObjectToSubobject -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\object_class_to_subobject_class.csv"
-    Write-Verbose "...object to subobject table initialized."
+    Write-Verbose "Initializing object class to subobject class table..."
+    Initialize-SchemaCompareObjectClassToSubobjectClass -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\object_class_to_subobject_class.csv"
+    Write-Verbose "...object class to subobject class table initialized."
 
     # Initialize the table that specifies the fields and their properties (e.g. data types, nullability) that will be eligible for comparison for each object class
     Write-Verbose "Initializing object class property table..."

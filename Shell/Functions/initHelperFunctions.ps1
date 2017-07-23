@@ -91,7 +91,7 @@ function Initialize-SchemaCompareObjectClass
     Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
 
-function Initialize-SchemaCompareObjectToSubobject
+function Initialize-SchemaCompareObjectClassToSubobjectClass
 {
     [CmdletBinding()]
     param
@@ -154,7 +154,7 @@ function Initialize-SchemaCompareObjectToSubobject
     EXECUTE [config].[p_initialize_object_to_subobject]
                 @as_input_table_name = '$InputTableName'"
     Write-Verbose "Executing the following SQL query:`n $Query"
-    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query
 }
 
 function Initialize-SchemaCompareObjectClassProperty
