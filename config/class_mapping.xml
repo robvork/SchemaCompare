@@ -1,0 +1,22 @@
+<classMappings>
+    <classMapping>
+        <objectClassName> table </objectClassName>
+        <subobjectClassName> table_column </subobjectClassName>
+    </classMapping>
+
+    <classMapping>
+        <objectClassName> view </objectClassName>
+        <subobjectClassName> view_column </subobjectClassName>
+    </classMapping>
+
+    <classMapping>
+        <objectClassName> procedure </objectClassName>
+        <subobjectClassName> procedure_param </subobjectClassName>
+    </classMapping>
+
+    <classMapping>
+        <objectClassName> function </objectClassName>
+        <subobjectClassName> function_param </subobjectClassName>
+    </classMapping>
+
+</classMappings>
