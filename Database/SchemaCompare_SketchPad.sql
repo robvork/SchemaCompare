@@ -1204,3 +1204,6 @@ FROM
 	sys.objects AS F
 WHERE F.[type] IN (N'FN', N'FT', N'IF')
 ;
+
+SELECT DB_NAME();
+SELECT @@SERVERNAME

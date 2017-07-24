@@ -1,19 +1,15 @@
-DROP PROCEDURE IF EXISTS [config].[p_refresh_object_class];
+DROP PROCEDURE IF EXISTS [config].[p_sync_table];
 GO
 
-CREATE PROCEDURE [config].[p_refresh_object_class]
+CREATE PROCEDURE [config].[p_sync_table]
 (
-	@as_instance_name SYSNAME = NULL
-,
-	@ai_instance_id INT = NULL
-,
-	@as_database_name SYSNAME = NULL
-,
-	@ai_database_id INT = NULL
+	@as_current_values_table_name SYSNAME = NULL
 ,	
-	@as_object_class_name [config].[NAME] = NULL
+	@as_schema_name SYSNAME = NULL
+,	
+	@as_table_name SYSNAME = NULL
 ,
-	@ai_object_class_id INT = NULL
+	@as_match_column SYSNAME = NULL
 )
 AS
 /*
@@ -290,11 +286,3 @@ BEGIN CATCH
 END CATCH
 END;
 GO
-
---DECLARE @lb_object_class_exists BIT;
---DECLARE @lb_is_subobject_class BIT;
---DECLARE @li_object_class_id [config].[ID];
-
---EXEC [config].[p_refresh_object_class] 
---	@as_object_class_name = 'tablet'
---;
