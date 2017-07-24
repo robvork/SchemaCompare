@@ -14,6 +14,8 @@ CREATE PROCEDURE [config].[p_refresh_object_class]
 	@as_object_class_name [config].[NAME] = NULL
 ,
 	@ai_object_class_id INT = NULL
+,
+	@ai_debug_level INT = 0
 )
 AS
 /*
@@ -34,6 +36,7 @@ BEGIN TRY
 	DECLARE @ls_object_class_table_name SYSNAME;
 	DECLARE @ls_object_class_source NVARCHAR(MAX);
 	DECLARE @ls_object_class_source_alias NVARCHAR(10);
+	DECLARE @ls_object_class_current_values_table_name SYSNAME;
 
 	DECLARE @li_error_severity INT;
 	DECLARE @li_error_state INT;  
@@ -252,20 +255,28 @@ BEGIN TRY
 	END;
 
 	-- Create table with same schema as the object class data table 
+	SET @ls_object_class_source = REPLACE(@ls_object_class_source, N'{alias}', @ls_object_class_source_alias);
+	SET @ls_object_class_current_values_table_name = N'#object_class_current_values';
+
 	SET @ls_sql = 
 	CONCAT 
 	(
-		N'SELECT TOP 0 * 
-		INTO #object_class_current 
-		FROM ', @ls_object_class_table_schema_name, N'.', @ls_object_class_table_name, N';'
+	  N'SELECT ', @ls_object_class_source_alias, N'.*
+		INTO ', @ls_object_class_current_values_table_name, N'
+		FROM ', @ls_object_class_source, N';
+
+		EXECUTE [config].[p_sync_object_class]
+			@as_object_class_current_values_table_name = ', @ls_single_quote, @ls_object_class_current_values_table_name, @ls_single_quote, N'
+		,	@as_object_class_id = ', @ai_object_class_id, N'
+		,	@ai_instance_id = ', @ai_instance_id, N'
+		,	@ai_database_id = ', @ai_database_id, N'
+		;'
 	);
 
-	-- Query all the rows in the current version of the object
-	-- From the previous query, extract the [name] column
-	-- Determine which rows in the [object] schema table have been inserted, deleted, and updated by matching on [name]
-	-- Delete the deleted rows 
-	-- Insert the inserted rows
-	-- Update the updated rows
+	IF @ai_debug_level > 0
+		PRINT CONCAT(N'Executing the following in dynamic SQL: ', @ls_newline, @ls_sql);
+
+	EXEC(@ls_sql);
 	
 	RETURN 0;
 END TRY

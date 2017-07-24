@@ -1,19 +1,95 @@
 DROP PROCEDURE IF EXISTS [config].[p_sync_table];
 GO
 
-CREATE PROCEDURE [config].[p_sync_table]
+CREATE PROCEDURE [config].[p_sync_object_class]
 (
-	@as_current_values_table_name SYSNAME = NULL
-,	
-	@as_schema_name SYSNAME = NULL
-,	
-	@as_table_name SYSNAME = NULL
-,
-	@as_match_column SYSNAME = NULL
+	@as_object_class_current_values_table_name SYSNAME = NULL
+,	@ai_object_class_id SYSNAME = NULL
+,	@ai_instance_id INT = NULL
+,	@ai_database_id INT = NULL
 )
 AS
 /*
-	Refresh just the selected object class without any recursion
+	-- Query all the rows in the current version of the object
+	-- From the previous query, extract the [name] column
+	-- Determine which rows in the [object] schema table have been inserted, deleted, and updated by matching on [name]
+	-- Delete the deleted rows 
+	-- Insert the inserted rows
+	-- Update the updated rows
+
+	We will use a merge statement since we need to do the classical insert/update/delete pattern
+
+	Here's an example from T-SQL Querying:
+	MERGE INTO dbo.Customers AS TGT -- define the source of data. will be @as_object_class_current_values_table_name in our case
+	USING dbo.CustomersStage AS SRC -- define the target of data. will be the table corresponding to @ai_object_class_id in our case
+	ON TGT.custid = SRC.custid -- define the matching condition. will be matched on instance_id, database_id, and name in our case
+	WHEN MATCHED THEN -- what happens when the matching condition holds? like in the example, we update in our case
+	UPDATE SET
+	TGT.companyname = SRC.companyname,
+	TGT.phone = SRC.phone,
+	TGT.address = SRC.address
+	WHEN NOT MATCHED THEN -- what happens for each row in the source that is not matched in the target? like in the example, we insert in our case
+	INSERT (custid, companyname, phone, address)
+	VALUES (SRC.custid, SRC.companyname, SRC.phone, SRC.address)
+	WHEN NOT MATCHED BY SOURCE THEN -- what happens for each row in the target which is not matched in the source? like in the example, we delete in our case
+	DELETE;
+
+	so how will this be different from the example?
+	1. we need to construct the column set dynamically at runtime  
+	2. we need to filter the target table on instance_id and database_id in a CTE or temp table prior to MERGING. we don't want to update anything belonging to other instance_ids or databases
+
+	1. static and dynamic elements in this procedure
+	**static elements**
+	target table
+	source table
+	matching condition
+	WHEN NOT MATCHED BY SOURCE action
+
+	**dynamic elements**
+	WHEN MATCHED target and source column list (will be the same exact names but we won't update instance_id, database_id, object_id, or name)
+	WHEN NOT MATCHED target insert column header and source column header
+
+	to accomplish this dynamicism, we do the following	
+		i. get the list of columns for object class @ai_object_class_id in [config].[object_class_property] for which is_enabled = true.
+		   we can assume that is_enabled = 0 for [instance_id], [database_id], [object_id].
+		   call this result set C.
+		ii. concatenate C in 3 different ways:
+			a) TGT.col = SRC.col for each col in C
+			b) (col1, col2, ..., coln) for col1, col2, ... , coln in C
+			c) SRC.col1, SRC.col2, ... , SRC.coln for col1, col2, ... coln in C
+
+			this concatenation can be done in any order using cursors or a SELECT @var = val pattern
+
+	2. instance/database-filtered object rows
+	we need to do something like the following:
+	WITH eligible_for_merge AS
+	(
+		SELECT * 
+		FROM <target_table>
+		WHERE [instance_id] = @ai_instance_id AND [database_id] = @ai_database_id
+	)
+	MERGE INTO eligible_for_merge AS TGT
+	...
+
+	---------------
+	Combining the above, we can write the query as follows:
+	WITH eligible_for_merge AS
+	(
+		SELECT * 
+		FROM <target_table>
+		WHERE [instance_id] = @ai_instance_id AND [database_id] = @ai_database_id
+	)
+	MERGE INTO eligible_for_merge AS TGT
+	USING @as_object_class_current_values_table_name AS SRC
+	ON TGT.[name] = SRC.[name]
+	WHEN MATCHED THEN UPDATE
+	<substatement_1_ii_a>
+	WHEN NOT MATCHED THEN INSERT 
+	<substatement_1_ii_b>
+	WHEN NOT MATCHED BY SOURCE
+	<substatement_1_ii_c>
+
+
 */
 BEGIN
 BEGIN TRY
