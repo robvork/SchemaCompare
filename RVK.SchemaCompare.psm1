@@ -1293,7 +1293,7 @@ function Install-SchemaCompare
 
     # Initialize the table that links object classes to subobject classes (e.g. tables to columns, procedures to parameters)
     Write-Verbose "Initializing object class to subobject class table..."
-    Initialize-SchemaCompareObjectClassToSubobjectClass -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\object_class_to_subobject_class.csv"
+    Initialize-SchemaCompareObjectClassToSubobjectClass -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\class_mapping.xml"
     Write-Verbose "...object class to subobject class table initialized."
 
     # Initialize the table that specifies the fields and their properties (e.g. data types, nullability) that will be eligible for comparison for each object class

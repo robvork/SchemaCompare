@@ -130,6 +130,7 @@ BEGIN TRY
 		,	OC2.[object_class_name] AS [subobject_class_name]
 		,	O2S.[mapping_table_schema]
 		,	O2S.[mapping_table_name]
+		,	O2S.[name_query]
 		  FROM 
 			[config].[object_to_subobject]  AS O2S
 		  INNER JOIN [config].[object_class] AS OC1

@@ -1,5 +1,25 @@
 <objectClasses>
     <objectClass>
+        <name> database </name>
+        <source>
+            sys.databases AS {alias} 
+        </source>
+        <source_alias> D </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> databases </view_name>
+    </objectClass>
+
+    <objectClass>
+        <name> schema </name>
+        <source>
+            sys.schemas AS {alias}
+        </source>
+        <source_alias> S </source_alias>
+        <view_schema> sys </view_schema>
+        <view_name> schemas </view_schema>
+    </objectClass>
+
+    <objectClass>
         <name> table </name>
         <source> 
             sys.tables AS {alias}
@@ -94,7 +114,7 @@
                 FROM sys.objects 
                 WHERE sys.objects.[object_id] = {alias}.[object_id] 
                         AND 
-                        sys.objects.[type] = ''FN''
+                        sys.objects.[type] IN (N'FN', N'FT', N'IF')
              )
         </source>
         <source_alias> P </source_alias>

@@ -1,22 +1,118 @@
 <classMappings>
     <classMapping>
+        <objectClassName> database </objectClassName>
+        <subobjectClassName> schema </subobjectClassName>
+        <nameQuery>
+        </nameQuery>
+    </classMapping>
+
+    <classMapping>
+        <objectClassName> schema </objectClassName>
+        <subobjectClassName> table </subobjectClassName>
+        <nameQuery>
+        </nameQuery>
+    </classMapping>
+
+    <classMapping>
+        <objectClassName> schema </objectClassName>
+        <subobjectClassName> view </subobjectClassName>
+        <nameQuery>
+        </nameQuery>
+    </classMapping>
+
+    <classMapping>
+        <objectClassName> schema </objectClassName>
+        <subobjectClassName> procedure </subobjectClassName>
+        <nameQuery>
+        </nameQuery>
+    </classMapping>
+
+    <classMapping>
+        <objectClassName> schema </objectClassName>
+        <subobjectClassName> function </subobjectClassName>
+        <nameQuery>
+        </nameQuery>
+    </classMapping>
+
+    <classMapping>
         <objectClassName> table </objectClassName>
         <subobjectClassName> table_column </subobjectClassName>
+        <nameQuery>
+        SELECT 
+            T.[name] AS [object_name]
+        ,	C.[name] AS [subobject_name]
+        FROM 
+            sys.tables 
+            AS T
+        INNER JOIN 
+            sys.columns 
+            AS C
+                ON T.[object_id] = C.[object_id] 
+        ;
+        </nameQuery>
     </classMapping>
 
     <classMapping>
         <objectClassName> view </objectClassName>
         <subobjectClassName> view_column </subobjectClassName>
+        <nameQuery>
+            SELECT 
+                V.[name] AS [object_name]
+            ,   C.[name] AS [subobject_name]
+            FROM 
+                sys.views 
+                AS V
+            INNER JOIN 
+                sys.columns 
+                AS C
+                    ON V.[object_id] = C.[object_id]
+            ;
+        </nameQuery>
     </classMapping>
 
     <classMapping>
         <objectClassName> procedure </objectClassName>
         <subobjectClassName> procedure_param </subobjectClassName>
+        <nameQuery>
+        SELECT 
+            P.[name] AS [object_name]
+        ,	SUBSTRING
+            (
+                M.[name]
+            ,	2
+            ,	LEN(M.[name]) - 1
+            )		 AS [subobject_name]
+        FROM 
+            sys.procedures 
+            AS P 
+        INNER JOIN  
+            sys.parameters 
+            AS M
+                ON P.[object_id] = M.[object_id]
+        </nameQuery>
     </classMapping>
 
     <classMapping>
         <objectClassName> function </objectClassName>
         <subobjectClassName> function_param </subobjectClassName>
+        <nameQuery>
+        SELECT 
+            F.[name] AS [object_name]
+        ,	SUBSTRING
+            (
+                M.[name]
+            ,	2
+            ,	LEN(M.[name]) - 1
+            )		 AS [subobject_name]
+        FROM 
+            sys.objects 
+            AS F
+        INNER JOIN 
+            sys.parameters 
+            AS M
+                ON F.[object_id] = M.[object_id] 
+        WHERE F.[type] IN (N'FN', N'FT', N'IF')
+        </nameQuery>
     </classMapping>
 
 </classMappings>

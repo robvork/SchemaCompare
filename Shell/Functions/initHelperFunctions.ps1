@@ -26,7 +26,7 @@ function Initialize-SchemaCompareObjectClass
     $RowSet =  ($ObjectClasses |
                 # Add quotes, trim whitespace, match name with table column name 
                 Select-Object   @{n="object_class_name"; e={"'" + $_.name.Trim() + "'"}}, 
-                                @{n="object_class_source"; e={"'" + $_.source.Trim() + "'"}},
+                                @{n="object_class_source"; e={"'" + ($_.source.Trim() -replace "(?<!')'(?!')", "''")  + "'"}},
                                 @{n="object_class_source_alias"; e={"'" + $_.source_alias.Trim() + "'"}},
                                 @{n="view_schema_name"; e={"'" + $_.view_schema.Trim() + "'"}},
                                 @{n="view_name"; e={"'" + $_.view_name.Trim() + "'"}} |
@@ -101,15 +101,17 @@ function Initialize-SchemaCompareObjectClassToSubobjectClass
     ,   [String] $ConfigFilePath
     )
 
-    $ObjectSubobjectClassMap = (Import-CSV -Path $ConfigFilePath)
+    $ObjectSubobjectClassMap = ([xml] (Get-Content -Path $ConfigFilePath -Raw)).ClassMappings.ClassMapping
 
     $RowSet =  ($ObjectSubobjectClassMap |
                 # Add quotes, trim whitespace
-                Select-Object   @{n="object_class_name"; e={"'" + $_.object_class_name.Trim() + "'"}}, 
-                                @{n="subobject_class_name"; e={"'" + $_.subobject_class_name.Trim() + "'"}} | 
+                Select-Object   @{n="object_class_name"; e={"'" + $_.objectClassName.Trim() + "'"}}, 
+                                @{n="subobject_class_name"; e={"'" + $_.subobjectClassName.Trim() + "'"}},
+                                @{n="name_query"; e={"'" + ($_.nameQuery.Trim() -replace "(?<!')'(?!')", "''") + "'"}} | 
                 # Combine properties into one string separated by a comma, then a line break
                 ForEach-Object { @( $_.object_class_name
                                     $_.subobject_class_name
+                                    $_.name_query
                                   ) -join ",`n"
                                 } | 
                 # Enclose each row with ( and )
@@ -125,6 +127,7 @@ function Initialize-SchemaCompareObjectClassToSubobjectClass
     $ColumnList = @(
                         "object_class_name"
                         "subobject_class_name"
+                        "name_query"
                 ) -join ",`n"
     $InputTableName = "#object_to_subobject_input"
     $InsertHeader = @(
@@ -147,6 +150,7 @@ function Initialize-SchemaCompareObjectClassToSubobjectClass
             (
                 object_class_name NVARCHAR(128) NOT NULL
             ,   subobject_class_name NVARCHAR(128) NOT NULL
+            ,   name_query NVARCHAR(MAX) NOT NULL
             );
 
             $InsertSQL ;

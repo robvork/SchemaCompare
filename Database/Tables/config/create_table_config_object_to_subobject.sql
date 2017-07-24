@@ -6,6 +6,7 @@ CREATE TABLE [config].[object_to_subobject]
 ,	[subobject_class_id] [config].[ID] NOT NULL
 ,	[mapping_table_schema] SYSNAME NOT NULL
 ,	[mapping_table_name] SYSNAME NOT NULL
+,	[name_query] NVARCHAR(MAX) NOT NULL
 ,	CONSTRAINT 
 		[pk_config_object_to_subobject]
 	PRIMARY KEY
