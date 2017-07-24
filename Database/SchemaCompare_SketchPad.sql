@@ -1161,7 +1161,6 @@ INNER JOIN sys.objects AS O
 
 SELECT * FROM [config].[object_class]
 SELECT * FROM [config].[object_class_property]
-SELECT * FROM [config].[system_type]
 SELECT * FROM [config].[object_to_subobject]
 
 EXEC [config].[p_initialize_object_class_property]
@@ -1171,3 +1170,37 @@ SELECT * FROM sys.all_views
 WHERE [name] = 'tables'
 
 SELECT * FROM sys.schemas
+
+SELECT 
+	DB_NAME() AS [object_name]
+,	S.[name] AS [subobject_name] 
+FROM 
+	sys.schemas AS S
+
+SELECT  
+	SCHEMA_NAME([schema_id]) AS [object_name]
+,	T.[name] AS [subobject_name]
+FROM 
+	sys.tables AS T 
+
+SELECT  
+	SCHEMA_NAME([schema_id]) AS [object_name]
+,	V.[name] AS [subobject_name]
+FROM 
+	sys.views AS V
+;
+
+SELECT  
+	SCHEMA_NAME([schema_id]) AS [object_name]
+,	P.[name] AS [subobject_name]
+FROM 
+	sys.procedures AS P
+;
+
+SELECT  
+	SCHEMA_NAME([schema_id]) AS [object_name]
+,	F.[name] AS [subobject_name]
+FROM 
+	sys.objects AS F
+WHERE F.[type] IN (N'FN', N'FT', N'IF')
+;

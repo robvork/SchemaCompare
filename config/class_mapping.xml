@@ -3,6 +3,12 @@
         <objectClassName> database </objectClassName>
         <subobjectClassName> schema </subobjectClassName>
         <nameQuery>
+            SELECT 
+                DB_NAME() AS [object_name]
+            ,	S.[name] AS [subobject_name] 
+            FROM 
+                sys.schemas AS S
+            ;
         </nameQuery>
     </classMapping>
 
@@ -10,6 +16,12 @@
         <objectClassName> schema </objectClassName>
         <subobjectClassName> table </subobjectClassName>
         <nameQuery>
+            SELECT  
+                SCHEMA_NAME([schema_id]) AS [object_name]
+            ,	T.[name] AS [subobject_name]
+            FROM 
+                sys.tables AS T
+            ;
         </nameQuery>
     </classMapping>
 
@@ -17,6 +29,12 @@
         <objectClassName> schema </objectClassName>
         <subobjectClassName> view </subobjectClassName>
         <nameQuery>
+        SELECT  
+            SCHEMA_NAME([schema_id]) AS [object_name]
+        ,	V.[name] AS [subobject_name]
+        FROM 
+            sys.views AS V
+        ;
         </nameQuery>
     </classMapping>
 
@@ -24,6 +42,12 @@
         <objectClassName> schema </objectClassName>
         <subobjectClassName> procedure </subobjectClassName>
         <nameQuery>
+        SELECT  
+            SCHEMA_NAME([schema_id]) AS [object_name]
+        ,	P.[name] AS [subobject_name]
+        FROM 
+            sys.procedures AS P
+        ;
         </nameQuery>
     </classMapping>
 
@@ -31,6 +55,13 @@
         <objectClassName> schema </objectClassName>
         <subobjectClassName> function </subobjectClassName>
         <nameQuery>
+        SELECT  
+            SCHEMA_NAME([schema_id]) AS [object_name]
+        ,	F.[name] AS [subobject_name]
+        FROM 
+            sys.objects AS F
+        WHERE F.[type] IN (N'FN', N'FT', N'IF')
+        ;
         </nameQuery>
     </classMapping>
 
@@ -76,12 +107,7 @@
         <nameQuery>
         SELECT 
             P.[name] AS [object_name]
-        ,	SUBSTRING
-            (
-                M.[name]
-            ,	2
-            ,	LEN(M.[name]) - 1
-            )		 AS [subobject_name]
+        ,	M.[name] AS [subobject_name]
         FROM 
             sys.procedures 
             AS P 
@@ -98,12 +124,7 @@
         <nameQuery>
         SELECT 
             F.[name] AS [object_name]
-        ,	SUBSTRING
-            (
-                M.[name]
-            ,	2
-            ,	LEN(M.[name]) - 1
-            )		 AS [subobject_name]
+        ,	M.[name] AS [subobject_name]
         FROM 
             sys.objects 
             AS F

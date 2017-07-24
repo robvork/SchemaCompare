@@ -28,7 +28,7 @@ function Initialize-SchemaCompareObjectClass
                 Select-Object   @{n="object_class_name"; e={"'" + $_.name.Trim() + "'"}}, 
                                 @{n="object_class_source"; e={"'" + ($_.source.Trim() -replace "(?<!')'(?!')", "''")  + "'"}},
                                 @{n="object_class_source_alias"; e={"'" + $_.source_alias.Trim() + "'"}},
-                                @{n="view_schema_name"; e={"'" + $_.view_schema.Trim() + "'"}},
+                                @{n="view_schema_name"; e={"'" + $_.view_schema_name.Trim() + "'"}},
                                 @{n="view_name"; e={"'" + $_.view_name.Trim() + "'"}} |
                 # Combine properties into one string separated by a comma, then a line break
                 ForEach-Object { @( $_.object_class_name
