@@ -62,24 +62,24 @@ AS
 
 	2. instance/database-filtered object rows
 	we need to do something like the following:
-	WITH eligible_for_merge AS
+	WITH target_rows AS
 	(
 		SELECT * 
 		FROM <target_table>
 		WHERE [instance_id] = @ai_instance_id AND [database_id] = @ai_database_id
 	)
-	MERGE INTO eligible_for_merge AS TGT
+	MERGE INTO target_rows AS TGT
 	...
 
 	---------------
 	Combining the above, we can write the query as follows:
-	WITH eligible_for_merge AS
+	WITH target_rows AS
 	(
 		SELECT * 
 		FROM <target_table>
 		WHERE [instance_id] = @ai_instance_id AND [database_id] = @ai_database_id
 	)
-	MERGE INTO eligible_for_merge AS TGT
+	MERGE INTO target_rows AS TGT
 	USING @as_object_class_current_values_table_name AS SRC
 	ON TGT.[name] = SRC.[name]
 	WHEN MATCHED THEN UPDATE
