@@ -1,4 +1,4 @@
-DROP PROCEDURE IF EXISTS [config].[p_sync_table];
+DROP PROCEDURE IF EXISTS [config].[p_sync_object_class];
 GO
 
 CREATE PROCEDURE [config].[p_sync_object_class]
@@ -16,6 +16,8 @@ CREATE PROCEDURE [config].[p_sync_object_class]
 	@ai_object_class_id INT = NULL
 ,
 	@as_input_table_name SYSNAME
+,
+	@ai_debug_level INT = 0
 )
 AS
 /*
@@ -95,8 +97,9 @@ AS
 	<substatement_1_ii_a>
 	WHEN NOT MATCHED THEN INSERT 
 	<substatement_1_ii_b>
-	WHEN NOT MATCHED BY SOURCE
 	<substatement_1_ii_c>
+	WHEN NOT MATCHED BY SOURCE
+	DELETE
 
 
 */
@@ -116,12 +119,19 @@ BEGIN TRY
 	DECLARE @ls_object_class_table_name SYSNAME;
 	DECLARE @ls_object_class_source NVARCHAR(MAX);
 	DECLARE @ls_object_class_source_alias NVARCHAR(10);
-	DECLARE @ls_sql_merge_matching_condition NVARCHAR(MAX);
+	
 	DECLARE @ls_sql_merge_update_set_statements NVARCHAR(MAX);
 	DECLARE @ls_sql_merge_insert_target_header NVARCHAR(MAX);
 	DECLARE @ls_sql_merge_insert_source_header NVARCHAR(MAX);
 	DECLARE @ls_key_column SYSNAME;
 	DECLARE @ls_val_column SYSNAME;
+
+	DECLARE @ls_sql_merge_target NVARCHAR(MAX);
+	DECLARE @ls_sql_merge_source NVARCHAR(MAX);
+	DECLARE @ls_sql_merge_matching_condition NVARCHAR(MAX);
+	DECLARE @ls_sql_merge_when_matched NVARCHAR(MAX);
+	DECLARE @ls_sql_merge_when_not_matched_by_target NVARCHAR(MAX);
+	DECLARE @ls_sql_merge_when_not_matched_by_source NVARCHAR(MAX);
 
 	DECLARE @li_error_severity INT;
 	DECLARE @li_error_state INT;  
@@ -322,7 +332,7 @@ BEGIN TRY
 		END; 
 	END;
 
-	-- Get list of enabled columns for the object class
+	-- Get list of columns for object class
 	INSERT INTO #object_class_property
 	(
 		property_name 
@@ -337,7 +347,42 @@ BEGIN TRY
 		[object_class_id] = @ai_object_class_id
 	;
 
-	-- Generate matching condition 
+	-- Validate that [config].[object_class_property defines at least one key column for the chosen object class
+	BEGIN
+	IF NOT EXISTS(SELECT * FROM #object_class_property WHERE [is_key] = 1)
+	BEGIN
+		SET @ls_error_msg = CONCAT(N'[config].[object_class_property] does not define a key for the chosen object class.'
+									  ,N'At least one key column must be specified.');
+		RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
+	END;
+	END;
+
+	/****************  Generate MERGE INTO target definition code ****************/
+	-- we determined the schema and table containing the merge target rows above.
+	-- we further need to filter down to just those rows belonging to the specified instance and server. 
+	-- by defining a CTE 'target_rows' satisfying this condition, we can isolate our work to just those rows.
+	SET @ls_sql_merge_target = 
+	CONCAT 
+	(
+		N'WITH target_rows AS 
+		(
+			SELECT * 
+			FROM ', @ls_object_class_table_schema_name, N'.', @ls_object_class_table_name, N' 
+			WHERE [instance_id] = ', @ai_instance_id, N' AND [database_id] = ', @ai_database_id, N'
+		)
+		MERGE INTO target_rows AS TGT'
+	); 
+
+	/****************  Generate USING source definition code ****************/
+	SET @ls_sql_merge_source = 
+	CONCAT 
+	(
+		N'USING ', @as_input_table_name, N' AS SRC'
+	);
+
+
+	/****************  Generate ON <boolean_expression> matching condition code ****************/
+	BEGIN
 		-- SQL of form SRC.key1 = TGT.key1, SRC.key2 = TGT.key2, ... , SRC.keyn = TGT.keyn 
 		-- for keys key1, key2, ... , keyn in #object_class_property
 		-- i.e. property_name values for which is_key = 1
@@ -350,35 +395,42 @@ BEGIN TRY
 	;
 
 	OPEN key_column_cursor;
+
 	FETCH NEXT FROM key_column_cursor
 	INTO @ls_key_column;
 
-	SET @ls_sql_merge_matching_condition = 
-	CONCAT
-	(
-		N'ON SRC.', @ls_key_column, N' = TGT.', @ls_key_column
-	);
-
-	WHILE 1 = 1
+	WHILE @@FETCH_STATUS <> 0
 	BEGIN
-		FETCH NEXT FROM key_column_cursor
-		INTO @ls_key_column; 
-
-		IF @@FETCH_STATUS = 0
-			BREAK;
-
 		SET @ls_sql_merge_matching_condition += 
 		CONCAT 
 		(
 			@ls_newline, N'AND SRC.', @ls_key_column, N' = TGT.', @ls_key_column
 		); 
+
+		FETCH NEXT FROM key_column_cursor
+		INTO @ls_key_column; 
 	END; 
+	END;
 
-	-- Generate update values for matching rows
-		-- SQL of the form TGT.val1 = SRC.val1, TGT.val2 = SRC.val2, ... , TGT.valm = SRC.valm 
-		-- for vals val1, val2, ... , valm in #object_class_property
-		-- i.e. property name values for which is_key = 0
+	SET @ls_sql_merge_matching_condition = 
+	CONCAT
+	(
+		N'ON '
+		-- extract the string beginning at the first occurrence of SRC
+		-- this omits the first occurrence of 'AND'
+	,	SUBSTRING
+		(
+			@ls_sql_merge_matching_condition
+		,	CHARINDEX(N'SRC', @ls_sql_merge_matching_condition)
+		,	LEN(@ls_sql_merge_matching_condition) 
+		)
+	)
 
+	/****************  Generate WHEN MATCHED THEN UPDATE code ****************/
+	-- SQL of the form TGT.val1 = SRC.val1, TGT.val2 = SRC.val2, ... , TGT.valm = SRC.valm 
+	-- for vals val1, val2, ... , valm in #object_class_property
+	-- i.e. property name values for which is_key = 0
+	BEGIN 
 	DECLARE val_column_cursor CURSOR LOCAL SCROLL
 	FOR 
 	SELECT [property_name] 
@@ -391,100 +443,167 @@ BEGIN TRY
 	FETCH NEXT FROM val_column_cursor
 	INTO @ls_val_column;
 
-	IF @@FETCH_STATUS > 0
+	SET @ls_sql_merge_update_set_statements = N'';
+	WHILE @@FETCH_STATUS <> 0
 	BEGIN
-		SET @ls_sql_merge_update_set_statements = 
-		CONCAT 
-		(
-			N'SET'
-		,	@ls_newline
-		,	N'TGT.', @ls_val_column, N' = ' 
-		,	N'SRC.', @ls_val_column
-		);
-	END;
-
-	WHILE 1 = 1
-	BEGIN
-		FETCH NEXT FROM val_column_cursor
-		INTO @ls_val_column; 
-
-		IF @@FETCH_STATUS = 0
-			BREAK;
-
 		SET @ls_sql_merge_update_set_statements += 
 		CONCAT 
 		(
-			@ls_newline, @ls_comma, N' '
+			@ls_newline
+		,	@ls_comma,	N' '
 		,	N'TGT.', @ls_val_column, N' = ' 
 		,	N'SRC.', @ls_val_column
 		); 
+
+		FETCH NEXT FROM val_column_cursor
+		INTO @ls_val_column;
 	END;
 
-
-	-- Generate insert values for rows in SRC which are not found in TGT
-		-- Target header
-			-- (key1, key2, ... , keyn, val1, val2, ... , valm) 
-				-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively 
-		-- Source columns
-			-- SRC.key1, SRC.key2, ... , SRC.keyn, SRC.val1, SRC.val2, ... , SRC.valm 
-				-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively
-				
-	FETCH FIRST FROM key_column_cursor 
-	INTO @ls_key_column; 
-	
-	SET @ls_sql_merge_insert_target_header = 
-	CONCAT
-	( 
-		N'('
-	,	@ls_key_column 
+	SET @ls_sql_merge_when_not_matched_by_source = 
+	CONCAT 
+	(
+		N'WHEN NOT MATCHED THEN UPDATE '
+		-- extract the substring starting at the first occurrence of TGT.
+		-- this omits the first newline, comma, and space
+	,	SUBSTRING 
+		(
+			@ls_sql_merge_update_set_statements
+		,	CHARINDEX('TGT', @ls_sql_merge_update_set_statements)
+		,	LEN(@ls_sql_merge_update_set_statements)
+		)
 	); 
 
-	WHILE 1 = 1
+	
+	END;
+
+	-- Generate insert values for rows in SRC which are not found in TGT
+		-- Note: since we validated that there is at least one column, the source and target headers here will each be nonempty
+	-- Target header
+		-- (key1, key2, ... , keyn, val1, val2, ... , valm) 
+			-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively
 	BEGIN
-		FETCH NEXT FROM key_column_cursor 
-		INTO @ls_key_column;
+	BEGIN 
+	SET @ls_sql_merge_insert_target_header = N'';
 
-		IF @@FETCH_STATUS = 0
-			BREAK;
+	FETCH FIRST FROM key_column_cursor 
+	INTO @ls_key_column; 
 
-		SET @ls_sql_merge_insert_target_header +=  
+	WHILE @@FETCH_STATUS <> 0
+	BEGIN
+		SET @ls_sql_merge_insert_target_header += 
 		CONCAT 
 		(
 			N', ', @ls_key_column
 		); 
+
+		FETCH NEXT FROM key_column_cursor 
+		INTO @ls_key_column;
 	END; 
 
-	FETCH NEXT FROM val_column_cursor 
+	FETCH FIRST FROM val_column_cursor 
 	INTO @ls_val_column; 
 
-	IF @@FETCH_STATUS <> 0
+	WHILE @@FETCH_STATUS <> 0
 	BEGIN
 		SET @ls_sql_merge_insert_target_header += 
 		CONCAT 
 		(
 			N', ', @ls_val_column
 		); 
-	END;
 
-	WHILE 1 = 1
-	BEGIN
 		FETCH NEXT FROM val_column_cursor 
 		INTO @ls_val_column; 
+	END;
 
-		IF @@FETCH_STATUS = 0
-			BREAK;
+	SET @ls_sql_merge_insert_target_header = 
+	CONCAT 
+	(
+		N'('
+		-- extract the substring starting at the character after the first occurrence of ','
+		-- this omits the first comma and space
+	,	SUBSTRING
+		(
+			@ls_sql_merge_insert_target_header
+		,	CHARINDEX(N',', @ls_sql_merge_insert_target_header) + 1
+		,	LEN(@ls_sql_merge_insert_target_header)
+		)
+	,	N')'
+	); 
+	END;
 
-		SET @ls_sql_merge_insert_target_header +=  
+	-- Source header
+	-- SRC.key1, SRC.key2, ... , SRC.keyn, SRC.val1, SRC.val2, ... , SRC.valm 
+		-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively
+	BEGIN
+
+	-- move cursor back to the first key column
+	FETCH FIRST FROM key_column_cursor 
+	INTO @ls_key_column; 
+
+	WHILE @@FETCH_STATUS <> 0
+	BEGIN
+		SET @ls_sql_merge_insert_source_header +=  
 		CONCAT 
 		(
-			N', ', @ls_val_column
+			N', SRC.', @ls_key_column
 		); 
+
+		FETCH NEXT FROM key_column_cursor 
+		INTO @ls_key_column;
 	END; 
 
-	SET @ls_sql_merge_insert_target_header += N')';
+	-- move cursor back to the first value column
+	FETCH FIRST FROM val_column_cursor 
+	INTO @ls_val_column; 
 
+	WHILE @@FETCH_STATUS <> 0
+	BEGIN
+		SET @ls_sql_merge_insert_source_header +=  
+		CONCAT 
+		(
+			N', SRC.', @ls_val_column
+		); 
+
+		FETCH NEXT FROM val_column_cursor 
+		INTO @ls_val_column;
+	END; 
 	
 
+	SET @ls_sql_merge_insert_source_header = 
+	CONCAT 
+	(
+		N'('
+		-- extract the substring starting at the character after the first occurrence of ',', as we did above
+	,	SUBSTRING 
+		(
+			@ls_sql_merge_insert_source_header
+		,	CHARINDEX(N',', @ls_sql_merge_insert_source_header) + 1
+		,	LEN(@ls_sql_merge_insert_source_header)
+		)
+	,	N')'
+	);
+
+	SET @ls_sql_merge_when_not_matched_by_target = 
+	CONCAT 
+	(
+		N'WHEN NOT MATCHED BY TARGET THEN INSERT'
+	,	@ls_newline 
+	,	@ls_sql_merge_insert_target_header
+	,	@ls_sql_merge_insert_source_header
+	); 
+	END;
+	END;
+
+	/****************  Generate WHEN NOT MATCHED THEN DELETE code ****************/
+	BEGIN
+	SET @ls_sql_merge_when_not_matched_by_source = 
+	CONCAT 
+	(
+		N'WHEN NOT MATCHED BY SOURCE', @ls_newline
+	,	N'DELETE'
+	);
+	END;
+	
 	-- Check that input table has all enabled columns with the appropriate data types
 	-- Query all the rows in the current version of the object
 	-- From the previous query, extract the [name] column
@@ -492,6 +611,55 @@ BEGIN TRY
 	-- Delete the deleted rows 
 	-- Insert the inserted rows
 	-- Update the updated rows
+
+	-- Generate final merge statement
+	/*
+	The code generated is of the following form. 
+	Dashed lines added here separate the contributions of each of the variables in the concatenation
+	---------------------------------------------------------------------------
+	WITH target_rows AS
+	(
+		SELECT * 
+		FROM <target_table>
+		WHERE [instance_id] = @ai_instance_id AND [database_id] = @ai_database_id
+	)
+	MERGE INTO target_rows AS TGT
+	---------------------------------------------------------------------------
+	USING @as_object_class_current_values_table_name AS SRC
+	---------------------------------------------------------------------------
+	ON SRC.key = TGT.key foreach key column 'key'
+	---------------------------------------------------------------------------
+	WHEN MATCHED THEN UPDATE
+	TGT.val = SRC.val foreach value column 'val' 
+	---------------------------------------------------------------------------
+	WHEN NOT MATCHED THEN INSERT 
+	(key1, key2, ... , keyn, val1, val2, ... , valm) for key column keyi and val column valj
+	SRC.key1, SRC.key2, ... , SRC.keyn, SRC.val1, SRC.val2, ... , SRC.valm for keyi and valj matching above
+	---------------------------------------------------------------------------
+	WHEN NOT MATCHED BY SOURCE
+	DELETE
+	---------------------------------------------------------------------------
+	*/
+	SET @ls_sql = 
+	CONCAT 
+	(
+		@ls_sql_merge_target						, @ls_newline 
+	,	@ls_sql_merge_source						, @ls_newline 
+	,	@ls_sql_merge_matching_condition			, @ls_newline 
+	,	@ls_sql_merge_when_matched					, @ls_newline 
+	,	@ls_sql_merge_when_not_matched_by_target	, @ls_newline 
+	,	@ls_sql_merge_when_not_matched_by_source    , @ls_newline 
+	); 
+
+	-- Perform the merge
+	BEGIN 
+	IF @ai_debug_level > 0
+	BEGIN
+		PRINT CONCAT(N'Executing the following in dynamic SQL:', @ls_newline, @ls_sql);
+	END; 
+
+	-- EXEC(@ls_sql);
+	END;
 
 	CLOSE val_column_cursor;
 	CLOSE key_column_cursor; 
