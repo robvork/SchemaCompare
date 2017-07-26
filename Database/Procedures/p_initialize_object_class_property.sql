@@ -31,7 +31,8 @@ BEGIN
 		,	object_class_property_is_nullable BIT NOT NULL
 		,	object_class_property_has_length BIT NOT NULL
 		,	object_class_property_length INT NULL
-		,	object_class_property_is_enabled BIT NOT NULL DEFAULT 0
+		,	object_class_property_is_enabled BIT NOT NULL 
+		,	object_class_property_is_key BIT NOT NULL
 		);
 
 		CREATE TABLE #view_column
@@ -141,6 +142,7 @@ BEGIN
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
 		,	[object_class_property_is_enabled]
+		,	[object_class_property_is_key]
 		)
 		-- Primary key of each object class table
 		-- server_id, database_id, object_id
@@ -152,8 +154,8 @@ BEGIN
 		,	0 -- doesn't have length
 		,	NULL -- NULL length
 		,	0 -- is not nullable
-		,	0 -- is not enabled for comparison because the primary key is an arbitrarily assigned SchemaCompare entity
-				-- thus differences in values are not meaningful.
+		,	1 -- enabled 
+		,   0 -- not a key
 		FROM 
 			[config].[object_class] AS OC
 			CROSS JOIN 
@@ -183,7 +185,8 @@ BEGIN
 		,	0 -- doesn't have length
 		,	NULL -- undefined length
 		,	0 -- is not nullable since it is part of a candidate key
-		,	1 -- enabled. the 'name' is the minimal set of attributes for comparison.
+		,	1 -- enabled
+		,	1 -- name is the default key within an instance/database/object class combination
 		FROM 
 			[config].[object_class] AS OC
 
@@ -205,6 +208,7 @@ BEGIN
 		,	VC.[view_column_is_nullable]
 		--	By default, disable all columns except parent_object_id and name
 		,	0
+		,	0 -- not a key by default
 		FROM 
 			[config].[object_class] 
 			AS OC
@@ -235,6 +239,7 @@ BEGIN
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
 		,	[object_class_property_is_enabled]
+		,	[object_class_property_is_key]
 		)
 		SELECT 
 			[object_class_id]
@@ -245,6 +250,7 @@ BEGIN
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
 		,	[object_class_property_is_enabled]
+		,	[object_class_property_is_key]
 		FROM
 			#object_class_property
 		;

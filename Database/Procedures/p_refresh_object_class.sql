@@ -245,23 +245,14 @@ BEGIN TRY
 	;
 	END;
 
-	-- Get column list of object class in [config].[object_class_property]
-	BEGIN
-	INSERT INTO #object_class_column
-	SELECT [object_class_property_name] 
-	FROM [config].[object_class_property] 
-	WHERE [object_class_id] = @ai_object_class_id
-	;
-	END;
-
-	-- Create table with same schema as the object class data table 
+	-- Get object's current values
 	SET @ls_object_class_source = REPLACE(@ls_object_class_source, N'{alias}', @ls_object_class_source_alias);
 	SET @ls_object_class_current_values_table_name = N'#object_class_current_values';
 
 	SET @ls_sql = 
 	CONCAT 
 	(
-	  N'SELECT ', @ls_object_class_source_alias, N'.*
+		N'SELECT ', @ls_object_class_source_alias, N'.*
 		INTO ', @ls_object_class_current_values_table_name, N'
 		FROM ', @ls_object_class_source, N';
 

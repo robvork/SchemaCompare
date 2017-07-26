@@ -3,10 +3,19 @@ GO
 
 CREATE PROCEDURE [config].[p_sync_object_class]
 (
-	@as_object_class_current_values_table_name SYSNAME = NULL
-,	@ai_object_class_id SYSNAME = NULL
-,	@ai_instance_id INT = NULL
-,	@ai_database_id INT = NULL
+	@as_instance_name SYSNAME = NULL
+,
+	@ai_instance_id INT = NULL
+,
+	@as_database_name SYSNAME = NULL
+,
+	@ai_database_id INT = NULL
+,	
+	@as_object_class_name [config].[NAME] = NULL
+,
+	@ai_object_class_id INT = NULL
+,
+	@as_input_table_name SYSNAME
 )
 AS
 /*
@@ -101,14 +110,23 @@ BEGIN TRY
 	DECLARE @ls_name_filter NVARCHAR(1000); 
 	DECLARE @ls_error_msg NVARCHAR(MAX);
 	DECLARE @ls_newline NCHAR(1); 
+	DECLARE @ls_comma NCHAR(1);
 	DECLARE @ls_single_quote NCHAR(1);
 	DECLARE @ls_object_class_table_schema_name SYSNAME;
 	DECLARE @ls_object_class_table_name SYSNAME;
 	DECLARE @ls_object_class_source NVARCHAR(MAX);
 	DECLARE @ls_object_class_source_alias NVARCHAR(10);
+	DECLARE @ls_sql_merge_matching_condition NVARCHAR(MAX);
+	DECLARE @ls_sql_merge_update_set_statements NVARCHAR(MAX);
+	DECLARE @ls_sql_merge_insert_target_header NVARCHAR(MAX);
+	DECLARE @ls_sql_merge_insert_source_header NVARCHAR(MAX);
+	DECLARE @ls_key_column SYSNAME;
+	DECLARE @ls_val_column SYSNAME;
 
 	DECLARE @li_error_severity INT;
 	DECLARE @li_error_state INT;  
+
+	DECLARE @lb_input_table_has_required_columns BIT;
 
 	END;
 
@@ -118,15 +136,17 @@ BEGIN TRY
 	SET @li_error_severity = 16;
 	SET @li_error_state = 1;
 	SET @ls_single_quote = N'''';
+	SET @ls_comma = N',';
 	END;
 
 	-- Declare temp tables
 	BEGIN
 	DROP TABLE IF EXISTS #object_class_column;
 
-	CREATE TABLE #object_class_column
+	CREATE TABLE #object_class_property
 	(
-		column_name SYSNAME NOT NULL PRIMARY KEY
+		property_name SYSNAME NOT NULL PRIMARY KEY
+	,	is_key BIT NOT NULL
 	);
 
 	END; 
@@ -302,46 +322,198 @@ BEGIN TRY
 		END; 
 	END;
 
-	-- Get object class schema, table, source, and source_alias from [config].[object_class]
-	BEGIN
-	SELECT 
-		@ls_object_class_table_schema_name = [table_schema_name]
-	,	@ls_object_class_table_name = [table_name]
-	,	@ls_object_class_source = [object_class_source]
-	,	@ls_object_class_source_alias = [object_class_source_alias]
-	FROM [config].[object_class]
-	WHERE object_class_id = @ai_object_class_id
-	;
-	END;
-
-	-- Get column list of object class in [config].[object_class_property]
-	BEGIN
-	INSERT INTO #object_class_column
-	SELECT [object_class_property_name] 
-	FROM [config].[object_class_property] 
-	WHERE [object_class_id] = @ai_object_class_id
-	;
-	END;
-
-	-- Create table with same schema as the object class data table 
-	SET @ls_sql = 
-	CONCAT 
+	-- Get list of enabled columns for the object class
+	INSERT INTO #object_class_property
 	(
-		N'SELECT TOP 0 * 
-		INTO #object_class_current 
-		FROM ', @ls_object_class_table_schema_name, N'.', @ls_object_class_table_name, N';'
+		property_name 
+	,	is_key
+	)
+	SELECT 
+		[object_class_property_name]
+	,	[object_class_property_is_key]
+	FROM 
+		[config].[object_class_property]
+	WHERE 
+		[object_class_id] = @ai_object_class_id
+	;
+
+	-- Generate matching condition 
+		-- SQL of form SRC.key1 = TGT.key1, SRC.key2 = TGT.key2, ... , SRC.keyn = TGT.keyn 
+		-- for keys key1, key2, ... , keyn in #object_class_property
+		-- i.e. property_name values for which is_key = 1
+
+	DECLARE key_column_cursor CURSOR LOCAL SCROLL
+	FOR 
+	SELECT [property_name] 
+	FROM #object_class_property
+	WHERE [is_key] = 1
+	;
+
+	OPEN key_column_cursor;
+	FETCH NEXT FROM key_column_cursor
+	INTO @ls_key_column;
+
+	SET @ls_sql_merge_matching_condition = 
+	CONCAT
+	(
+		N'ON SRC.', @ls_key_column, N' = TGT.', @ls_key_column
 	);
 
+	WHILE 1 = 1
+	BEGIN
+		FETCH NEXT FROM key_column_cursor
+		INTO @ls_key_column; 
+
+		IF @@FETCH_STATUS = 0
+			BREAK;
+
+		SET @ls_sql_merge_matching_condition += 
+		CONCAT 
+		(
+			@ls_newline, N'AND SRC.', @ls_key_column, N' = TGT.', @ls_key_column
+		); 
+	END; 
+
+	-- Generate update values for matching rows
+		-- SQL of the form TGT.val1 = SRC.val1, TGT.val2 = SRC.val2, ... , TGT.valm = SRC.valm 
+		-- for vals val1, val2, ... , valm in #object_class_property
+		-- i.e. property name values for which is_key = 0
+
+	DECLARE val_column_cursor CURSOR LOCAL SCROLL
+	FOR 
+	SELECT [property_name] 
+	FROM #object_class_property
+	WHERE [is_key] = 0
+	;
+
+	OPEN val_column_cursor;
+
+	FETCH NEXT FROM val_column_cursor
+	INTO @ls_val_column;
+
+	IF @@FETCH_STATUS > 0
+	BEGIN
+		SET @ls_sql_merge_update_set_statements = 
+		CONCAT 
+		(
+			N'SET'
+		,	@ls_newline
+		,	N'TGT.', @ls_val_column, N' = ' 
+		,	N'SRC.', @ls_val_column
+		);
+	END;
+
+	WHILE 1 = 1
+	BEGIN
+		FETCH NEXT FROM val_column_cursor
+		INTO @ls_val_column; 
+
+		IF @@FETCH_STATUS = 0
+			BREAK;
+
+		SET @ls_sql_merge_update_set_statements += 
+		CONCAT 
+		(
+			@ls_newline, @ls_comma, N' '
+		,	N'TGT.', @ls_val_column, N' = ' 
+		,	N'SRC.', @ls_val_column
+		); 
+	END;
+
+
+	-- Generate insert values for rows in SRC which are not found in TGT
+		-- Target header
+			-- (key1, key2, ... , keyn, val1, val2, ... , valm) 
+				-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively 
+		-- Source columns
+			-- SRC.key1, SRC.key2, ... , SRC.keyn, SRC.val1, SRC.val2, ... , SRC.valm 
+				-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively
+				
+	FETCH FIRST FROM key_column_cursor 
+	INTO @ls_key_column; 
+	
+	SET @ls_sql_merge_insert_target_header = 
+	CONCAT
+	( 
+		N'('
+	,	@ls_key_column 
+	); 
+
+	WHILE 1 = 1
+	BEGIN
+		FETCH NEXT FROM key_column_cursor 
+		INTO @ls_key_column;
+
+		IF @@FETCH_STATUS = 0
+			BREAK;
+
+		SET @ls_sql_merge_insert_target_header +=  
+		CONCAT 
+		(
+			N', ', @ls_key_column
+		); 
+	END; 
+
+	FETCH NEXT FROM val_column_cursor 
+	INTO @ls_val_column; 
+
+	IF @@FETCH_STATUS <> 0
+	BEGIN
+		SET @ls_sql_merge_insert_target_header += 
+		CONCAT 
+		(
+			N', ', @ls_val_column
+		); 
+	END;
+
+	WHILE 1 = 1
+	BEGIN
+		FETCH NEXT FROM val_column_cursor 
+		INTO @ls_val_column; 
+
+		IF @@FETCH_STATUS = 0
+			BREAK;
+
+		SET @ls_sql_merge_insert_target_header +=  
+		CONCAT 
+		(
+			N', ', @ls_val_column
+		); 
+	END; 
+
+	SET @ls_sql_merge_insert_target_header += N')';
+
+	
+
+	-- Check that input table has all enabled columns with the appropriate data types
 	-- Query all the rows in the current version of the object
 	-- From the previous query, extract the [name] column
 	-- Determine which rows in the [object] schema table have been inserted, deleted, and updated by matching on [name]
 	-- Delete the deleted rows 
 	-- Insert the inserted rows
 	-- Update the updated rows
-	
+
+	CLOSE val_column_cursor;
+	CLOSE key_column_cursor; 
+	DEALLOCATE val_column_cursor;
+	DEALLOCATE key_column_cursor;
+
 	RETURN 0;
 END TRY
 BEGIN CATCH
+	IF CURSOR_STATUS('local', 'val_column_cursor') > -1
+		CLOSE val_column_cursor;
+
+	IF CURSOR_STATUS('local', 'key_column_cursor') > -1
+		CLOSE key_column_cursor;
+
+	IF CURSOR_STATUS('local', 'val_column_cursor') > -3
+		DEALLOCATE val_column_cursor;
+
+	IF CURSOR_STATUS('local', 'key_column_cursor') > -3
+		DEALLOCATE key_column_cursor;
+
+
 	SET @ls_error_msg = 
 	CONCAT 
 	(

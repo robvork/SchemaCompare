@@ -9,7 +9,8 @@ CREATE TABLE [config].[object_class_property]
 ,	[object_class_property_is_nullable] BIT NOT NULL
 ,	[object_class_property_has_length] BIT NOT NULL
 ,	[object_class_property_length] INT NULL
-,	[object_class_property_is_enabled] BIT NULL
+,	[object_class_property_is_enabled] BIT NOT NULL
+,	[object_class_property_is_key] BIT NOT NULL
 ,	CONSTRAINT pk_config_object_class_property
 	PRIMARY KEY
 	(

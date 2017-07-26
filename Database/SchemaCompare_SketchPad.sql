@@ -1207,3 +1207,5 @@ WHERE F.[type] IN (N'FN', N'FT', N'IF')
 
 SELECT DB_NAME();
 SELECT @@SERVERNAME
+
+SELECT * FROM [config].[object_class_property]

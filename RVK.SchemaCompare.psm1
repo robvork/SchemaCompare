@@ -1127,6 +1127,16 @@ function Get-SchemaCompareObjectClass
     Invoke-SqlCmd2 @ConnectionParams -Query $Query -As PSObject
 }
 
+function Get-SchemaCompareSourceInstance 
+{
+
+}
+
+function Get-SchemaCompareSourceDatabase
+{
+    
+}
+
 function Get-SchemaCompareObjectClassToSubobjectClass
 {
     [CmdletBinding()]
