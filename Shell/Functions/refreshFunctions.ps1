@@ -69,7 +69,7 @@ function Sync-SchemaCompareObjectClass
         #>
 
         # Get object class query
-        $ObjectClassQuery = Get-SchemaCompareObjectClassQuery -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName
+        $ObjectClassQuery = Get-SchemaCompareObjectClassQuery -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName -SourceDatabase $SourceDatabase
     
         $ObjectClassQuery | 
         ForEach-Object {
@@ -78,8 +78,10 @@ function Sync-SchemaCompareObjectClass
             $CurrentValuesTableName = "#${ObjectClassName}_current_values"
             Write-Verbose "Syncing $ObjectClassName";
             $Query = "WITH current_values AS ($Query) 
-                      INSERT INTO $CurrentValuesTableName
-                      SELECT * FROM current_values;
+                      
+                      SELECT * 
+                      INTO $CurrentValuesTableName
+                      FROM current_values;
 
                       EXECUTE [config].[p_sync_object_class]
                             @as_instance_name = '$SourceServerInstance'
@@ -87,14 +89,10 @@ function Sync-SchemaCompareObjectClass
                       ,     @as_object_class_name = '$ObjectClassName'
                       ,     @as_input_table_name = '$CurrentValuesTableName'
             "
+
+            Write-Verbose "Executing the following query:`n${Query}"
+            Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query
         }
-
-
-
-
-
-        # Query object class data
-        # Call sync procedure
         
     }
     catch 
