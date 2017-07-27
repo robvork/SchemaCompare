@@ -1209,3 +1209,16 @@ SELECT DB_NAME();
 SELECT @@SERVERNAME
 
 SELECT * FROM [config].[object_class_property]
+
+DECLARE @ls_sql NVARCHAR(MAX) = 
+CONCAT 
+(
+	N'WITH current_values AS (', N'SELECT T.*     FROM sys.tables AS T', N')
+	  SELECT * 
+	  INTO #table_current
+	  FROM current_values;'
+,	  N'SELECT ''#table_current'';'
+,	  N'SELECT * FROM #table_current;'
+);
+
+EXEC(@ls_sql)

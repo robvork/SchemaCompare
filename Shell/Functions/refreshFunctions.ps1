@@ -17,6 +17,7 @@ function Sync-SchemaCompareObjectClass
     try 
     {
         Set-StrictMode -Version Latest
+        <#
         $ServerInstanceValid = Test-SQLServerInstance -ServerInstance $ServerInstance
 
         if(-not $ServerInstanceValid)
@@ -65,8 +66,36 @@ function Sync-SchemaCompareObjectClass
         {
             throw "'SourceDatabase' is not a valid database on '$SourceServerInstance'"
         }
+        #>
 
-        # Get object class source
+        # Get object class query
+        $ObjectClassQuery = Get-SchemaCompareObjectClassQuery -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName
+    
+        $ObjectClassQuery | 
+        ForEach-Object {
+            $Query = $_.object_class_query; 
+            $ObjectClassName = $_.object_class_name
+            $CurrentValuesTableName = "#${ObjectClassName}_current_values"
+            Write-Verbose "Syncing $ObjectClassName";
+            $Query = "WITH current_values AS ($Query) 
+                      INSERT INTO $CurrentValuesTableName
+                      SELECT * FROM current_values;
+
+                      EXECUTE [config].[p_sync_object_class]
+                            @as_instance_name = '$SourceServerInstance'
+                      ,     @as_database_name = '$SourceDatabase'
+                      ,     @as_object_class_name = '$ObjectClassName'
+                      ,     @as_input_table_name = '$CurrentValuesTableName'
+            "
+
+        
+
+        }
+
+
+
+
+
         # Query object class data
         # Call sync procedure
         

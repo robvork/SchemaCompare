@@ -15,7 +15,7 @@ CREATE PROCEDURE [config].[p_sync_object_class]
 ,
 	@ai_object_class_id INT = NULL
 ,
-	@as_input_table_name SYSNAME
+	@as_input_table_name SYSNAME = NULL
 ,
 	@ai_debug_level INT = 0
 )
@@ -162,175 +162,175 @@ BEGIN TRY
 	END; 
 
 	-- Validate/Set Instance in [config].[instance]
-	BEGIN
-	IF (@as_instance_name IS NULL AND @ai_instance_id IS NULL) 
-		OR 
-	   (@as_instance_name IS NOT NULL AND @ai_instance_id IS NOT NULL)
-	BEGIN
-		SET @ls_error_msg = N'Exactly one of @as_instance_name or @ai_instance_id must be specified';
+	--BEGIN
+	--IF (@as_instance_name IS NULL AND @ai_instance_id IS NULL) 
+	--	OR 
+	--   (@as_instance_name IS NOT NULL AND @ai_instance_id IS NOT NULL)
+	--BEGIN
+	--	SET @ls_error_msg = N'Exactly one of @as_instance_name or @ai_instance_id must be specified';
 		
-		RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
-	END;
-	ELSE IF @as_instance_name IS NOT NULL
-	BEGIN
-		SET @ai_instance_id = 
-		(
-			SELECT [instance_id] 
-			FROM [config].[instance] 
-			WHERE [instance_name] = @as_instance_name
-		);
+	--	RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
+	--END;
+	--ELSE IF @as_instance_name IS NOT NULL
+	--BEGIN
+	--	SET @ai_instance_id = 
+	--	(
+	--		SELECT [instance_id] 
+	--		FROM [config].[instance] 
+	--		WHERE [instance_name] = @as_instance_name
+	--	);
 
-		IF @ai_instance_id IS NULL
-		BEGIN
-			SET @ls_error_msg = 
-			CONCAT 
-			(
-				@ls_single_quote
-			,	@as_instance_name
-			,	@ls_single_quote
-			,	N' is not a recognized instance name'
-			);
+	--	IF @ai_instance_id IS NULL
+	--	BEGIN
+	--		SET @ls_error_msg = 
+	--		CONCAT 
+	--		(
+	--			@ls_single_quote
+	--		,	@as_instance_name
+	--		,	@ls_single_quote
+	--		,	N' is not a recognized instance name'
+	--		);
 
-			RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
-		END;
-	END; 
-	ELSE IF @ai_instance_id IS NOT NULL
-	BEGIN
-		IF NOT EXISTS
-		(
-			SELECT * 
-			FROM [config].[instance] 
-			WHERE [instance_id] = @ai_instance_id
-		)
-		BEGIN
-			SET @ls_error_msg = 
-			CONCAT 
-			(
-				@ai_instance_id
-			,	N' is not a valid instance ID'
-			); 
-		END; 
-	END;
-	END;
+	--		RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
+	--	END;
+	--END; 
+	--ELSE IF @ai_instance_id IS NOT NULL
+	--BEGIN
+	--	IF NOT EXISTS
+	--	(
+	--		SELECT * 
+	--		FROM [config].[instance] 
+	--		WHERE [instance_id] = @ai_instance_id
+	--	)
+	--	BEGIN
+	--		SET @ls_error_msg = 
+	--		CONCAT 
+	--		(
+	--			@ai_instance_id
+	--		,	N' is not a valid instance ID'
+	--		); 
+	--	END; 
+	--END;
+	--END;
 
 	-- Validate/Set Database in [config].[database]
-	BEGIN
-	IF (@as_database_name IS NULL AND @ai_database_id IS NULL) 
-		OR 
-	   (@as_database_name IS NOT NULL AND @ai_database_id IS NOT NULL)
-	BEGIN
-		SET @ls_error_msg = N'Exactly one of @as_database_name or @ai_database_id must be specified';
+	--BEGIN
+	--IF (@as_database_name IS NULL AND @ai_database_id IS NULL) 
+	--	OR 
+	--   (@as_database_name IS NOT NULL AND @ai_database_id IS NOT NULL)
+	--BEGIN
+	--	SET @ls_error_msg = N'Exactly one of @as_database_name or @ai_database_id must be specified';
 		
-		RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
-	END;
-	ELSE IF @as_database_name IS NOT NULL
-	BEGIN
-		SET @ai_database_id = 
-		(
-			SELECT [database_id] 
-			FROM [config].[database] 
-			WHERE [database_name] = @as_database_name 
-				  AND 
-				  [instance_id] = @ai_instance_id
-		);
+	--	RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
+	--END;
+	--ELSE IF @as_database_name IS NOT NULL
+	--BEGIN
+	--	SET @ai_database_id = 
+	--	(
+	--		SELECT [database_id] 
+	--		FROM [config].[database] 
+	--		WHERE [database_name] = @as_database_name 
+	--			  AND 
+	--			  [instance_id] = @ai_instance_id
+	--	);
 
-		IF @ai_database_id IS NULL
-		BEGIN
-			SET @ls_error_msg = 
-			CONCAT 
-			(
-				CONCAT 
-				(
-					@ls_single_quote
-				,	@as_database_name
-				,	@ls_single_quote
-				) 
-			,	N' is not a recognized database name for instance name '
-			,	CONCAT 
-				(
-					@ls_single_quote
-				,	@as_instance_name
-				,	@ls_single_quote
-				,	N' is not a recognized instance name'
-				)
-			);
+	--	IF @ai_database_id IS NULL
+	--	BEGIN
+	--		SET @ls_error_msg = 
+	--		CONCAT 
+	--		(
+	--			CONCAT 
+	--			(
+	--				@ls_single_quote
+	--			,	@as_database_name
+	--			,	@ls_single_quote
+	--			) 
+	--		,	N' is not a recognized database name for instance name '
+	--		,	CONCAT 
+	--			(
+	--				@ls_single_quote
+	--			,	@as_instance_name
+	--			,	@ls_single_quote
+	--			,	N' is not a recognized instance name'
+	--			)
+	--		);
 
-			RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
-		END;
-	END; 
-	ELSE IF @ai_database_id IS NOT NULL
-	BEGIN
-		IF NOT EXISTS
-		(
-			SELECT * 
-			FROM [config].[database] 
-			WHERE [database_id] = @ai_database_id
-				  AND 
-				  [instance_id] = @ai_instance_id
-		)
-		BEGIN
-			SET @ls_error_msg = 
-			CONCAT 
-			(
-				@ai_database_id
-			,	N' is not a valid database ID for instance ID '
-			,	@ai_instance_id
-			); 
-		END; 
-	END;
-	END;
+	--		RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
+	--	END;
+	--END; 
+	--ELSE IF @ai_database_id IS NOT NULL
+	--BEGIN
+	--	IF NOT EXISTS
+	--	(
+	--		SELECT * 
+	--		FROM [config].[database] 
+	--		WHERE [database_id] = @ai_database_id
+	--			  AND 
+	--			  [instance_id] = @ai_instance_id
+	--	)
+	--	BEGIN
+	--		SET @ls_error_msg = 
+	--		CONCAT 
+	--		(
+	--			@ai_database_id
+	--		,	N' is not a valid database ID for instance ID '
+	--		,	@ai_instance_id
+	--		); 
+	--	END; 
+	--END;
+	--END;
 
 	-- Validate/Set Object Class in [config].[object_class]
-	BEGIN
-		IF (@as_object_class_name IS NULL AND @ai_object_class_id IS NULL) 
-			OR 
-		   (@as_object_class_name IS NOT NULL AND @ai_object_class_id IS NOT NULL)
-		BEGIN
-			SET @ls_error_msg = N'Exactly one of @as_object_class_name or @ai_object_class_id must be specified';
+	--BEGIN
+	--	IF (@as_object_class_name IS NULL AND @ai_object_class_id IS NULL) 
+	--		OR 
+	--	   (@as_object_class_name IS NOT NULL AND @ai_object_class_id IS NOT NULL)
+	--	BEGIN
+	--		SET @ls_error_msg = N'Exactly one of @as_object_class_name or @ai_object_class_id must be specified';
 		
-			RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
-		END;
-		ELSE IF @as_object_class_name IS NOT NULL
-		BEGIN
-			SET @ai_object_class_id = 
-			(
-				SELECT [object_class_id] 
-				FROM [config].[object_class] 
-				WHERE [object_class_name] = @as_object_class_name
-			);
+	--		RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
+	--	END;
+	--	ELSE IF @as_object_class_name IS NOT NULL
+	--	BEGIN
+	--		SET @ai_object_class_id = 
+	--		(
+	--			SELECT [object_class_id] 
+	--			FROM [config].[object_class] 
+	--			WHERE [object_class_name] = @as_object_class_name
+	--		);
 
-			IF @ai_object_class_id IS NULL
-			BEGIN
-				SET @ls_error_msg = 
-				CONCAT 
-				(
-					@ls_single_quote
-				,	@as_object_class_name
-				,	@ls_single_quote
-				,	N' is not a recognized object class name'
-				);
+	--		IF @ai_object_class_id IS NULL
+	--		BEGIN
+	--			SET @ls_error_msg = 
+	--			CONCAT 
+	--			(
+	--				@ls_single_quote
+	--			,	@as_object_class_name
+	--			,	@ls_single_quote
+	--			,	N' is not a recognized object class name'
+	--			);
 
-				RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
-			END;
-		END; 
-		ELSE IF @ai_object_class_id IS NOT NULL
-		BEGIN
-			IF NOT EXISTS
-			(
-				SELECT * 
-				FROM [config].[object_class] 
-				WHERE [object_class_id] = @ai_object_class_id
-			)
-			BEGIN
-				SET @ls_error_msg = 
-				CONCAT 
-				(
-					@ai_object_class_id
-				,	N' is not a valid object class ID'
-				); 
-			END; 
-		END; 
-	END;
+	--			RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
+	--		END;
+	--	END; 
+	--	ELSE IF @ai_object_class_id IS NOT NULL
+	--	BEGIN
+	--		IF NOT EXISTS
+	--		(
+	--			SELECT * 
+	--			FROM [config].[object_class] 
+	--			WHERE [object_class_id] = @ai_object_class_id
+	--		)
+	--		BEGIN
+	--			SET @ls_error_msg = 
+	--			CONCAT 
+	--			(
+	--				@ai_object_class_id
+	--			,	N' is not a valid object class ID'
+	--			); 
+	--		END; 
+	--	END; 
+	--END;
 
 	-- Get list of columns for object class
 	INSERT INTO #object_class_property
@@ -347,6 +347,12 @@ BEGIN TRY
 		[object_class_id] = @ai_object_class_id
 	;
 
+	IF @ai_debug_level > 1
+	BEGIN
+		SELECT '#object_class_property';
+		SELECT * FROM #object_class_property;
+	END; 
+
 	-- Validate that [config].[object_class_property defines at least one key column for the chosen object class
 	BEGIN
 	IF NOT EXISTS(SELECT * FROM #object_class_property WHERE [is_key] = 1)
@@ -356,6 +362,14 @@ BEGIN TRY
 		RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
 	END;
 	END;
+
+	-- Get schema and table name for chosen object class
+	SELECT 
+		@ls_object_class_table_schema_name = [table_schema_name]
+	,	@ls_object_class_table_name = [table_name]
+	FROM [config].[object_class]
+	WHERE object_class_id = @ai_object_class_id
+	;
 
 	/****************  Generate MERGE INTO target definition code ****************/
 	-- we determined the schema and table containing the merge target rows above.
@@ -367,11 +381,14 @@ BEGIN TRY
 		N'WITH target_rows AS 
 		(
 			SELECT * 
-			FROM ', @ls_object_class_table_schema_name, N'.', @ls_object_class_table_name, N' 
+			FROM [', @ls_object_class_table_schema_name, N'].[', @ls_object_class_table_name, N'] 
 			WHERE [instance_id] = ', @ai_instance_id, N' AND [database_id] = ', @ai_database_id, N'
 		)
 		MERGE INTO target_rows AS TGT'
 	); 
+
+	IF @ai_debug_level > 1
+		SELECT 'merge_target' AS [description], @ls_sql_merge_target AS 'code'
 
 	/****************  Generate USING source definition code ****************/
 	SET @ls_sql_merge_source = 
@@ -380,6 +397,8 @@ BEGIN TRY
 		N'USING ', @as_input_table_name, N' AS SRC'
 	);
 
+	IF @ai_debug_level > 1
+		SELECT 'merge_source' AS [description], @ls_sql_merge_source AS 'code'
 
 	/****************  Generate ON <boolean_expression> matching condition code ****************/
 	BEGIN
@@ -399,8 +418,12 @@ BEGIN TRY
 	FETCH NEXT FROM key_column_cursor
 	INTO @ls_key_column;
 
-	WHILE @@FETCH_STATUS <> 0
+	SET @ls_sql_merge_matching_condition = N'';
+	WHILE @@FETCH_STATUS = 0
 	BEGIN
+		IF @ai_debug_level > 1
+			SELECT @ls_key_column AS '@ls_key_column'
+
 		SET @ls_sql_merge_matching_condition += 
 		CONCAT 
 		(
@@ -444,7 +467,7 @@ BEGIN TRY
 	INTO @ls_val_column;
 
 	SET @ls_sql_merge_update_set_statements = N'';
-	WHILE @@FETCH_STATUS <> 0
+	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		SET @ls_sql_merge_update_set_statements += 
 		CONCAT 
@@ -459,10 +482,11 @@ BEGIN TRY
 		INTO @ls_val_column;
 	END;
 
-	SET @ls_sql_merge_when_not_matched_by_source = 
+	SET @ls_sql_merge_when_matched = 
 	CONCAT 
 	(
-		N'WHEN NOT MATCHED THEN UPDATE '
+		N'WHEN MATCHED THEN UPDATE SET '
+	,	@ls_newline 
 		-- extract the substring starting at the first occurrence of TGT.
 		-- this omits the first newline, comma, and space
 	,	SUBSTRING 
@@ -475,7 +499,8 @@ BEGIN TRY
 
 	
 	END;
-
+	IF @ai_debug_level > 1
+		SELECT 'WHEN MATCHED' AS [description], @ls_sql_merge_when_matched AS 'code'
 	-- Generate insert values for rows in SRC which are not found in TGT
 		-- Note: since we validated that there is at least one column, the source and target headers here will each be nonempty
 	-- Target header
@@ -488,7 +513,7 @@ BEGIN TRY
 	FETCH FIRST FROM key_column_cursor 
 	INTO @ls_key_column; 
 
-	WHILE @@FETCH_STATUS <> 0
+	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		SET @ls_sql_merge_insert_target_header += 
 		CONCAT 
@@ -503,7 +528,7 @@ BEGIN TRY
 	FETCH FIRST FROM val_column_cursor 
 	INTO @ls_val_column; 
 
-	WHILE @@FETCH_STATUS <> 0
+	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		SET @ls_sql_merge_insert_target_header += 
 		CONCAT 
@@ -530,6 +555,8 @@ BEGIN TRY
 	,	N')'
 	); 
 	END;
+	IF @ai_debug_level > 1
+		SELECT 'INSERT target header' AS [description], @ls_sql_merge_insert_target_header AS 'code'
 
 	-- Source header
 	-- SRC.key1, SRC.key2, ... , SRC.keyn, SRC.val1, SRC.val2, ... , SRC.valm 
@@ -540,7 +567,8 @@ BEGIN TRY
 	FETCH FIRST FROM key_column_cursor 
 	INTO @ls_key_column; 
 
-	WHILE @@FETCH_STATUS <> 0
+	SET @ls_sql_merge_insert_source_header = N'';
+	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		SET @ls_sql_merge_insert_source_header +=  
 		CONCAT 
@@ -556,7 +584,7 @@ BEGIN TRY
 	FETCH FIRST FROM val_column_cursor 
 	INTO @ls_val_column; 
 
-	WHILE @@FETCH_STATUS <> 0
+	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		SET @ls_sql_merge_insert_source_header +=  
 		CONCAT 
@@ -568,20 +596,17 @@ BEGIN TRY
 		INTO @ls_val_column;
 	END; 
 	
-
+	-- extract the substring starting at the character after the first occurrence of ',', as we did above
 	SET @ls_sql_merge_insert_source_header = 
-	CONCAT 
+	SUBSTRING 
 	(
-		N'('
-		-- extract the substring starting at the character after the first occurrence of ',', as we did above
-	,	SUBSTRING 
-		(
-			@ls_sql_merge_insert_source_header
-		,	CHARINDEX(N',', @ls_sql_merge_insert_source_header) + 1
-		,	LEN(@ls_sql_merge_insert_source_header)
-		)
-	,	N')'
+		@ls_sql_merge_insert_source_header
+	,	CHARINDEX(N',', @ls_sql_merge_insert_source_header) + 1
+	,	LEN(@ls_sql_merge_insert_source_header)
 	);
+	
+	IF @ai_debug_level > 1
+		SELECT 'INSERT source header' AS [description], @ls_sql_merge_insert_source_header AS 'code'
 
 	SET @ls_sql_merge_when_not_matched_by_target = 
 	CONCAT 
@@ -594,6 +619,9 @@ BEGIN TRY
 	END;
 	END;
 
+	IF @ai_debug_level > 1
+		SELECT 'WHEN NOT MATCHED BY TARGET code' AS [description], @ls_sql_merge_when_not_matched_by_target AS 'code'
+
 	/****************  Generate WHEN NOT MATCHED THEN DELETE code ****************/
 	BEGIN
 	SET @ls_sql_merge_when_not_matched_by_source = 
@@ -603,6 +631,9 @@ BEGIN TRY
 	,	N'DELETE'
 	);
 	END;
+
+	IF @ai_debug_level > 1
+		SELECT 'WHEN NOT MATCHED BY SOURCE code' AS [description], @ls_sql_merge_when_not_matched_by_source AS 'code'
 	
 	-- Check that input table has all enabled columns with the appropriate data types
 	-- Query all the rows in the current version of the object
@@ -656,6 +687,10 @@ BEGIN TRY
 	IF @ai_debug_level > 0
 	BEGIN
 		PRINT CONCAT(N'Executing the following in dynamic SQL:', @ls_newline, @ls_sql);
+		IF @ai_debug_level > 1
+		BEGIN
+			SELECT @ls_sql AS '@ls_sql';
+		END; 
 	END; 
 
 	-- EXEC(@ls_sql);
@@ -702,3 +737,11 @@ BEGIN CATCH
 END CATCH
 END;
 GO
+
+--EXEC [config].[p_sync_object_class]
+--	@ai_object_class_id = 1
+--,	@as_input_table_name = '#current'
+--,	@ai_debug_level = 2
+--,   @ai_instance_id = 2
+--,	@ai_database_id = 1
+--;

@@ -1134,7 +1134,7 @@ function Get-SchemaCompareSourceInstance
 
 function Get-SchemaCompareSourceDatabase
 {
-    
+
 }
 
 function Get-SchemaCompareObjectClassToSubobjectClass
@@ -1179,6 +1179,31 @@ function Get-SchemaCompareObjectClassToSubobjectClass
     ;"
 
     Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query -As PSObject
+}
+
+function Get-SchemaCompareObjectClassQuery
+{
+    [CmdletBinding()]
+    param 
+    (
+        [String] $ServerInstance 
+    ,   [String] $Database
+    ,   [String] $ObjectClassName
+    )
+
+    if($ObjectClassName -eq $null)
+    {
+        $ObjectClassName = "NULL"
+    }
+    else 
+    {
+        $ObjectClassName = "'" + $ObjectClassName + "'"
+    }
+
+    $Query = "EXECUTE [config].[p_get_object_class_query]
+                @as_object_class_name = $ObjectClassName"
+
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query
 }
 
 function Install-SchemaCompare
