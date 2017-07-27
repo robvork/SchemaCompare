@@ -2,7 +2,7 @@
     <objectClass>
         <name> database </name>
         <source>
-            sys.databases AS {alias} 
+            {db}.sys.databases AS {alias} 
         </source>
         <source_alias> D </source_alias>
         <view_schema_name> sys </view_schema_name>
@@ -12,7 +12,7 @@
     <objectClass>
         <name> schema </name>
         <source>
-            sys.schemas AS {alias}
+            {db}.sys.schemas AS {alias}
         </source>
         <source_alias> S </source_alias>
         <view_schema_name> sys </view_schema_name>
@@ -22,7 +22,7 @@
     <objectClass>
         <name> table </name>
         <source> 
-            sys.tables AS {alias}
+            {db}.sys.tables AS {alias}
         </source>
         <source_alias> T </source_alias>
         <view_schema_name> sys </view_schema_name>
@@ -32,10 +32,10 @@
     <objectClass>
         <name> table_column </name>
         <source> 
-            sys.columns AS {alias} WHERE EXISTS 
+            {db}.sys.columns AS {alias} WHERE EXISTS 
              (
                 SELECT * 
-                FROM sys.tables 
+                FROM {db}.sys.tables 
                 WHERE sys.tables.[object_id] = {alias}.[object_id]
              )
             
@@ -48,7 +48,7 @@
     <objectClass>
         <name> view </name>
         <source> 
-            sys.views AS {alias}
+            {db}.sys.views AS {alias}
         </source>
         <source_alias> V </source_alias>
         <view_schema_name> sys </view_schema_name>
@@ -58,11 +58,11 @@
     <objectClass>
         <name> view_column </name>
         <source> 
-            sys.columns AS {alias} WHERE EXISTS 
+            {db}.sys.columns AS {alias} WHERE EXISTS 
             (
                 SELECT * 
-                FROM sys.views 
-                WHERE sys.views.[object_id] = {alias}.[object_id]
+                FROM {db}.sys.views 
+                WHERE {db}.sys.views.[object_id] = {alias}.[object_id]
             )
         </source>
         <source_alias> C </source_alias>
@@ -73,7 +73,7 @@
     <objectClass>
         <name> procedure </name>
         <source> 
-            sys.procedures AS {alias}
+            {db}.sys.procedures AS {alias}
         </source>
         <source_alias> P </source_alias>
         <view_schema_name> sys </view_schema_name>
@@ -83,11 +83,11 @@
     <objectClass>
         <name> procedure_param </name>
         <source> 
-            sys.parameters AS {alias} WHERE EXISTS
+            {db}.sys.parameters AS {alias} WHERE EXISTS
             (
                 SELECT * 
-                FROM sys.procedures 
-                WHERE sys.procedures.[object_id] = {alias}.[object_id]
+                FROM {db}.sys.procedures 
+                WHERE {db}.sys.procedures.[object_id] = {alias}.[object_id]
             )
         </source>
         <source_alias> P </source_alias>
@@ -98,7 +98,7 @@
     <objectClass>
         <name> function </name>
         <source> 
-            sys.object AS {alias} WHERE [type] = N''FN''
+            {db}.sys.objects AS {alias} WHERE [type] IN (N'FN', N'FT', N'IF')
         </source>
         <source_alias> F </source_alias>
         <view_schema_name> sys </view_schema_name>
@@ -108,13 +108,13 @@
     <objectClass>
         <name> function_param </name>
         <source> 
-            sys.parameters AS {alias} WHERE EXISTS
+             {db}.sys.parameters AS {alias} WHERE EXISTS
              (
                 SELECT * 
-                FROM sys.objects 
-                WHERE sys.objects.[object_id] = {alias}.[object_id] 
+                FROM {db}.sys.objects 
+                WHERE {db}.sys.objects.[object_id] = {alias}.[object_id] 
                         AND 
-                        sys.objects.[type] IN (N'FN', N'FT', N'IF')
+                        {db}.sys.objects.[type] IN (N'FN', N'FT', N'IF')
              )
         </source>
         <source_alias> P </source_alias>

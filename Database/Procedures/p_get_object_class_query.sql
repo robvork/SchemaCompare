@@ -4,6 +4,7 @@ GO
 CREATE PROCEDURE [config].[p_get_object_class_query]
 (
 	@as_object_class_name [config].[NAME] = NULL
+,	@as_database_name SYSNAME
 ,	@ai_debug_level INT = 0
 )
 AS
@@ -50,16 +51,25 @@ BEGIN TRY
 		); 
 	END;
 
+	/* 
+	 The query below is a little nasty looking, but it's quite simple. We're just querying the object class name and id
+	 and constructing a query on @as_database_name's metadata. [object_class_source] provides a FROM source that can be used
+	 on any SQL Server database. within [object_class_source] is a special replace token '{alias}' which must be replaced by
+	 a legal SQL Server alias. [object_class_source_alias] provides one such possibility.
+	 The query performs a SELECT * FROM @as_database_name.<source_with_alias_replaced>, where <source_with_alias_replaced> is the 
+	 metadata source with {alias} replaced by the value in [object_class_source_alias].
+	*/
 	SET @ls_sql = 
 	CONCAT 
 	(
-		N'SELECT 
+		N'
+			SELECT 
 			[object_class_name]
-		  , [object_class_id]
-		  , CONCAT
+			, [object_class_id]
+			, CONCAT
 			( 
-				N''SELECT '',	[object_class_source_alias], N''.*
-				FROM '', REPLACE([object_class_source], N''{alias}'', [object_class_source_alias])
+				N''SELECT '', [object_class_source_alias], N''.*
+				FROM '', REPLACE(REPLACE([object_class_source], N''{alias}'', [object_class_source_alias]), ''{db}'',''', @as_database_name, ''')
 			) AS [object_class_query]
 			FROM [config].[object_class] 
 		'
@@ -99,5 +109,7 @@ GO
 
 
 --EXEC [config].[p_get_object_class_query] 
---	@as_object_class_name = 'table' 
+--	@as_object_class_name = 'procedure_param' 
+--,	@as_database_name = 'wideworldimporters'
+--,	@ai_debug_level = 1
 --;

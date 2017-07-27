@@ -87,9 +87,6 @@ function Sync-SchemaCompareObjectClass
                       ,     @as_object_class_name = '$ObjectClassName'
                       ,     @as_input_table_name = '$CurrentValuesTableName'
             "
-
-        
-
         }
 
 

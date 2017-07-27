@@ -1222,3 +1222,21 @@ CONCAT
 );
 
 EXEC(@ls_sql)
+
+SELECT * FROM PowerSwirl.sys.tables
+
+DECLARE @as_database_name SYSNAME = N'WideWorldImporters';
+SELECT 
+	[object_class_name]
+	, [object_class_id]
+	, CONCAT
+	( 
+		N''SELECT '', [object_class_source_alias], N''.*
+		FROM '', REPLACE(REPLACE([object_class_source], N''{alias}'', [object_class_source_alias]), ''{db}'', @as_database_name)
+	) AS [object_class_query]
+	FROM [config].[object_class] 
+
+	SELECT T.*      FROM wideworldimporters.sys.tables AS T
+
+	SELECT P.*
+                                FROM wideworldimporters.sys.procedures AS P
