@@ -114,8 +114,8 @@ GO
 --,	@ai_debug_level = 1
 --;
 
-SELECT * 
-FROM [config].[object_class_property] AS OCP
-	INNER JOIN [config].[object_class] AS OC
-		ON OCP.[object_class_id] = OC.[object_class_id]
-WHERE [object_class_name] = N'table'
+--SELECT * 
+--FROM [config].[object_class_property] AS OCP
+--	INNER JOIN [config].[object_class] AS OC
+--		ON OCP.[object_class_id] = OC.[object_class_id]
+--WHERE [object_class_name] = N'table'

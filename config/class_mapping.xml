@@ -7,7 +7,7 @@
                 DB_NAME() AS [object_name]
             ,	S.[name] AS [subobject_name] 
             FROM 
-                sys.schemas AS S
+                {db}.sys.schemas AS S
             ;
         </nameQuery>
     </classMapping>
@@ -20,7 +20,7 @@
                 SCHEMA_NAME([schema_id]) AS [object_name]
             ,	T.[name] AS [subobject_name]
             FROM 
-                sys.tables AS T
+                {db}.sys.tables AS T
             ;
         </nameQuery>
     </classMapping>
@@ -30,10 +30,13 @@
         <subobjectClassName> view </subobjectClassName>
         <nameQuery>
         SELECT  
-            SCHEMA_NAME([schema_id]) AS [object_name]
+            S.[name] AS [object_name]
         ,	V.[name] AS [subobject_name]
         FROM 
-            sys.views AS V
+            {db}.sys.views AS V
+        INNER JOIN 
+            {db}.sys.schemas AS S
+                ON V.[schema_id] = S.[schema_id]
         ;
         </nameQuery>
     </classMapping>
@@ -46,7 +49,7 @@
             SCHEMA_NAME([schema_id]) AS [object_name]
         ,	P.[name] AS [subobject_name]
         FROM 
-            sys.procedures AS P
+            {db}.sys.procedures AS P
         ;
         </nameQuery>
     </classMapping>
@@ -59,7 +62,7 @@
             SCHEMA_NAME([schema_id]) AS [object_name]
         ,	F.[name] AS [subobject_name]
         FROM 
-            sys.objects AS F
+            {db}.sys.objects AS F
         WHERE F.[type] IN (N'FN', N'FT', N'IF')
         ;
         </nameQuery>
@@ -73,10 +76,10 @@
             T.[name] AS [object_name]
         ,	C.[name] AS [subobject_name]
         FROM 
-            sys.tables 
+            {db}.sys.tables 
             AS T
         INNER JOIN 
-            sys.columns 
+            {db}.sys.columns 
             AS C
                 ON T.[object_id] = C.[object_id] 
         ;
@@ -91,10 +94,10 @@
                 V.[name] AS [object_name]
             ,   C.[name] AS [subobject_name]
             FROM 
-                sys.views 
+                {db}.sys.views 
                 AS V
             INNER JOIN 
-                sys.columns 
+                {db}.sys.columns 
                 AS C
                     ON V.[object_id] = C.[object_id]
             ;
@@ -109,10 +112,10 @@
             P.[name] AS [object_name]
         ,	M.[name] AS [subobject_name]
         FROM 
-            sys.procedures 
+            {db}.sys.procedures 
             AS P 
         INNER JOIN  
-            sys.parameters 
+            {db}.sys.parameters 
             AS M
                 ON P.[object_id] = M.[object_id]
         </nameQuery>
@@ -126,10 +129,10 @@
             F.[name] AS [object_name]
         ,	M.[name] AS [subobject_name]
         FROM 
-            sys.objects 
+            {db}.sys.objects 
             AS F
         INNER JOIN 
-            sys.parameters 
+            {db}.sys.parameters 
             AS M
                 ON F.[object_id] = M.[object_id] 
         WHERE F.[type] IN (N'FN', N'FT', N'IF')

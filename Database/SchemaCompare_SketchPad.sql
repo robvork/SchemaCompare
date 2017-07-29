@@ -1245,3 +1245,17 @@ SELECT * FROM [config].[instance]
 SELECT * FROM [config].[database]
 
 SELECT * FROM [config].[object_class_property] WHERE [object_class_property_is_enabled] = 1
+
+SELECT FORMATMESSAGE(N'%s josifjosi', QUOTENAME('blob', N''''))
+
+SELECT 
+	OC1.[object_class_name] 
+,	OC1.[object_class_id] 
+,	OC2.[object_class_name]
+,	OC2.[object_class_id]
+,	O2S.[name_query]
+FROM [config].[object_to_subobject] AS O2S
+	INNER JOIN [config].[object_class] AS OC1
+		ON O2S.[object_class_id] = OC1.[object_class_id]
+	INNER JOIN [config].[object_class] AS OC2
+		ON O2S.[subobject_class_id] = OC2.[object_class_id]
