@@ -44,6 +44,7 @@ BEGIN
 	,	object_class_name NVARCHAR(128) NOT NULL
 	,	object_class_source NVARCHAR(MAX) NOT NULL
 	,	object_class_source_alias NVARCHAR(10) NOT NULL
+	,	object_class_source_object_id_column SYSNAME NOT NULL
 	,	view_schema_name SYSNAME NOT NULL
 	,	view_name SYSNAME NOT NULL
 	);
@@ -57,6 +58,7 @@ BEGIN
 		,	object_class_name 
 		,	object_class_source
 		,	object_class_source_alias 
+		,	object_class_source_object_id_column
 		,	view_schema_name
 		,	view_name
 		)
@@ -65,6 +67,7 @@ BEGIN
 		,	I.[object_class_name] 
 		,	I.[object_class_source]
 		,	I.[object_class_source_alias]
+		,	I.[object_class_source_object_id_column]
 		,	I.[view_schema_name]
 		,	I.[view_name] 
 		FROM ', @as_input_table_name, N' AS I
@@ -108,6 +111,7 @@ BEGIN
 	,	[object_class_name]
 	,	[object_class_source]
 	,	[object_class_source_alias]
+	,	[object_class_source_object_id_column]
 	,	[table_schema_name]
 	,	[table_name]
 	,	[view_schema_name] 
@@ -118,6 +122,7 @@ BEGIN
 	,	[object_class_name]
 	,	[object_class_source]
 	,	[object_class_source_alias]
+	,	[object_class_source_object_id_column]
 	,	N'object'
 	,	[object_class_name]
 	,	[view_schema_name]

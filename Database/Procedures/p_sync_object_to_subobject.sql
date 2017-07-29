@@ -36,8 +36,8 @@ BEGIN TRY
 	DECLARE @ls_single_quote NCHAR(1);
 	DECLARE @ls_object_class_table_schema_name SYSNAME;
 	DECLARE @ls_object_class_table_name SYSNAME;
-	DECLARE @ls_object_class_source NVARCHAR(MAX);
-	DECLARE @ls_object_class_source_alias NVARCHAR(10);
+	DECLARE @ls_subobject_class_table_schema_name SYSNAME;
+	DECLARE @ls_subobject_class_table_name SYSNAME;
 	
 	DECLARE @ls_sql_merge_update_set_statements NVARCHAR(MAX);
 	DECLARE @ls_sql_merge_insert_target_header NVARCHAR(MAX);
@@ -81,7 +81,7 @@ BEGIN TRY
 		[object_name] SYSNAME NOT NULL
 	,	[object_id] INT NULL
 	,	[subobject_name] SYSNAME NOT NULL
-	,	[subobject_id] BIT NULL
+	,	[subobject_id] INT NULL
 	,	PRIMARY KEY([object_name], [subobject_name])
 	);
 
@@ -343,7 +343,20 @@ BEGIN TRY
 		END; 
 	END;
 
+	-- Get object and subobject schema and table names
+	SELECT 
+		@ls_object_class_table_schema_name = [table_schema_name]
+	,	@ls_object_class_table_name = [table_name]
+	FROM [config].[object_class]
+	WHERE [object_class_id] = @ai_object_class_id
+
+	SELECT 
+		@ls_subobject_class_table_schema_name = [table_schema_name]
+	,	@ls_subobject_class_table_name = [table_name]
+	FROM [config].[object_class]
+	WHERE [object_class_id] = @ai_subobject_class_id	
 	
+	-- Get current object and subobject names
 	SET @ls_sql = 
 	CONCAT 
 	(
@@ -385,22 +398,189 @@ BEGIN TRY
 		SELECT [object_name], [subobject_name] FROM #object_to_subobject_current;
 	END;
 
+	-- get object and subobject ids from names. all names should correspond to exactly one row within an instance/database/object class combination
+	SET @ls_sql = 
+	CONCAT 
+	(
+		N'	UPDATE U2SC
+			SET 
+				U2SC.[object_id] = O.[object_id] 
+		  ,		U2SC.[subobject_id] = SO.[object_id]
+			FROM 
+				#object_to_subobject_current AS U2SC
+			INNER JOIN 
+			',	QUOTENAME(@ls_object_class_table_schema_name), N'.', QUOTENAME(@ls_object_class_table_name), N' AS O
+				ON  (U2SC.[object_name] = O.[name]) 
+				AND (O.[instance_id] = ', @ai_instance_id, N')
+				AND (O.[database_id] = ', @ai_database_id, N')
+			INNER JOIN 
+			',	QUOTENAME(@ls_subobject_class_table_schema_name), N'.', QUOTENAME(@ls_subobject_class_table_name), N' AS SO
+				ON  (U2SC.[subobject_name] = SO.[name])
+				AND (SO.[instance_id] = ', @ai_instance_id, N')
+				AND (SO.[database_id] = ', @ai_database_id, N')
+			;
+		  '
+	);
 
+	IF @ai_debug_level > 0
+	BEGIN
+		PRINT CONCAT(N'Executing the following in dynamic SQL:', @ls_newline, @ls_sql);
+	END;
 
+	EXEC(@ls_sql);
+
+	IF @ai_debug_level > 1
+	BEGIN
+		SELECT N'#object_to_subobject_current';
+		SELECT 
+			[object_name]
+		,	[object_id]
+		,	[subobject_name]
+		,	[subobject_id] 
+		FROM 
+			#object_to_subobject_current;
+	END;
+	
+	-- Validate that all object names correspond to an object_id by checking for any NULLs. If each name has an entry, there will be no NULLs
+	IF EXISTS 
+	(
+		SELECT * 
+		FROM #object_to_subobject_current
+		WHERE [object_id] IS NULL 
+			  OR 
+			  [subobject_id] IS NULL
+	)
+	BEGIN 
+		SET @ls_error_msg = 
+		CONCAT(
+			N'There is one or more object name which does not correspond to an object_id.', @ls_newline, 
+			N'Run p_sync_object_class for the object class and subobject class and then run this procedure again.'
+			  );
+
+		IF @ai_debug_level > 1 
+		BEGIN
+			SELECT 'Invalid objects and subobjects in #object_to_subobject_current';
+
+			SELECT 'Invalid object' AS [descr] 
+			,	   [object_name] 
+			FROM #object_to_subobject_current
+			WHERE [object_id] IS NULL
+
+			UNION ALL
+
+			SELECT 'Invalid subobject' AS [descr]
+			,	  [subobject_name] 
+			FROM #object_to_subobject_current
+			WHERE [subobject_id] IS NULL
+		END; 
+	END;
+
+	/*
+		The merge will have the following form:
+
+		WITH merge_target AS
+		(
+			SELECT [object_id], [subobject_id] 
+			FROM <object_to_subobject_schema>.<object_to_subobject_table>
+		)
+		MERGE INTO merge_target AS TGT
+		
+		USING #object_to_subobject_current AS SRC
+		
+		ON SRC.[object_id] = TGT.[object_id] 
+		   AND 
+		   SRC.[subobject_id] = TGT.[subobject_id]
+		
+		WHEN NOT MATCHED BY TARGET THEN
+		INSERT ([object_id], [subobject_id])
+		VALUES (SRC.[object_id], SRC.[subobject_id])
+		
+		WHEN NOT MATCHED BY SOURCE THEN 
+		DELETE
+		;
+	*/
+
+	-- Construct merge SQL
+	SET @ls_sql_merge_target = 
+	CONCAT 
+	(
+		N'WITH merge_target AS 
+		(
+			SELECT [object_id], [subobject_id] 
+			FROM ', QUOTENAME(@ls_object_mapping_table_schema), N'.', QUOTENAME(@ls_object_mapping_table_name), N'
+		)
+		MERGE INTO merge_target AS TGT'
+	);
+
+	SET @ls_sql_merge_source = N'USING #object_to_subobject_current AS SRC'
+
+	SET @ls_sql_merge_matching_condition = 
+	CONCAT
+	( 
+		N'ON SRC.[object_id] = TGT.[object_id]', @ls_newline
+	,	N'AND', @ls_newline
+	,	N'SRC.[subobject_id] = TGT.[subobject_id]'
+	);
+
+	SET @ls_sql_merge_when_not_matched_by_target = 
+	CONCAT 
+	(
+		N'WHEN NOT MATCHED BY TARGET THEN', @ls_newline 
+	,	N'INSERT ([object_id], [subobject_id])', @ls_newline
+	,	N'VALUES (SRC.[object_id], SRC.[subobject_id])'
+	);
+
+	SET @ls_sql_merge_when_not_matched_by_source =
+	CONCAT 
+	(	
+		N'WHEN NOT MATCHED BY SOURCE THEN', @ls_newline
+	,	N'DELETE'
+	); 
+
+	SET @ls_sql_merge_when_matched = N'-- WHEN MATCHED : nothing to update so omit'; 
+
+	SET @ls_sql =  
+	CONCAT 
+	(
+		@ls_sql_merge_target						, @ls_newline 
+	,	@ls_sql_merge_source						, @ls_newline
+	,	@ls_sql_merge_matching_condition			, @ls_newline 
+	,	@ls_sql_merge_when_matched					, @ls_newline 
+	,	@ls_sql_merge_when_not_matched_by_target	, @ls_newline 
+	,	@ls_sql_merge_when_not_matched_by_source	, @ls_newline 
+	,	N';'
+	);
+
+	IF @ai_debug_level > 0
+	BEGIN
+		PRINT CONCAT(N'Executing the following in dynamic SQL:', @ls_newline, @ls_sql);
+	END;
+
+	EXEC(@ls_sql);
+
+	IF @ai_debug_level > 1
+	BEGIN
+		SET @ls_sql = CONCAT 
+		(
+			N'SELECT O.[object_id]	AS [object_id]
+			,		 O.[name]		AS [object_name]
+			,		 SO.[object_id] AS [subobject_id]
+			,		 SO.[name]		AS [subobject_name]
+			FROM ', QUOTENAME(@ls_object_mapping_table_schema), N'.', QUOTENAME(@ls_object_mapping_table_name), N' AS O2S
+			INNER JOIN ', QUOTENAME(@ls_object_class_table_schema_name), N'.', QUOTENAME(@ls_object_class_table_name), N' AS O
+				ON O2S.[object_id] = O.[object_id] 
+			INNER JOIN ', QUOTENAME(@ls_subobject_class_table_schema_name), N'.', QUOTENAME(@ls_subobject_class_table_name), N' AS SO
+				ON O2S.[subobject_id] = SO.[object_id]
+			ORDER BY O.[name], SO.[name]	
+			'
+		);
+
+		PRINT CONCAT(N'Executing the following in dynamic SQL:', @ls_newline, @ls_sql);
+
+		EXEC(@ls_sql);
+	END;
 END TRY
 BEGIN CATCH
-	--IF CURSOR_STATUS('local', 'val_column_cursor') > -1
-	--	CLOSE val_column_cursor;
-
-	--IF CURSOR_STATUS('local', 'key_column_cursor') > -1
-	--	CLOSE key_column_cursor;
-
-	--IF CURSOR_STATUS('local', 'val_column_cursor') > -3
-	--	DEALLOCATE val_column_cursor;
-
-	--IF CURSOR_STATUS('local', 'key_column_cursor') > -3
-	--	DEALLOCATE key_column_cursor;
-
 
 	SET @ls_error_msg = 
 	CONCAT 

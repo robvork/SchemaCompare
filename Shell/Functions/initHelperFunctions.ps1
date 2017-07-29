@@ -28,12 +28,14 @@ function Initialize-SchemaCompareObjectClass
                 Select-Object   @{n="object_class_name"; e={"'" + $_.name.Trim() + "'"}}, 
                                 @{n="object_class_source"; e={"'" + ($_.source.Trim() -replace "(?<!')'(?!')", "''")  + "'"}},
                                 @{n="object_class_source_alias"; e={"'" + $_.source_alias.Trim() + "'"}},
+                                @{n="object_class_source_object_id_column"; e={"'" + $_.source_id_column.Trim() + "'"}},
                                 @{n="view_schema_name"; e={"'" + $_.view_schema_name.Trim() + "'"}},
                                 @{n="view_name"; e={"'" + $_.view_name.Trim() + "'"}} |
                 # Combine properties into one string separated by a comma, then a line break
                 ForEach-Object { @( $_.object_class_name
                                     $_.object_class_source 
                                     $_.object_class_source_alias
+                                    $_.object_class_source_object_id_column
                                     $_.view_schema_name
                                     $_.view_name
                                     ) -join ",`n"
@@ -52,6 +54,7 @@ function Initialize-SchemaCompareObjectClass
                         "object_class_name"
                         "object_class_source"
                         "object_class_source_alias"
+                        "object_class_source_object_id_column"
                         "view_schema_name"
                         "view_name"
                 ) -join ",`n"
@@ -78,6 +81,7 @@ function Initialize-SchemaCompareObjectClass
                 object_class_name NVARCHAR(128) NOT NULL
             ,   object_class_source NVARCHAR(MAX) NOT NULL
             ,   object_class_source_alias NVARCHAR(10) NOT NULL
+            ,   object_class_source_object_id_column SYSNAME NOT NULL
             ,   view_schema_name SYSNAME NOT NULL
             ,   view_name SYSNAME NOT NULL
             );

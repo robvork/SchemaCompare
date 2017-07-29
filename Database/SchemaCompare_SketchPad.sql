@@ -1248,12 +1248,13 @@ SELECT * FROM [config].[object_class_property] WHERE [object_class_property_is_e
 
 SELECT FORMATMESSAGE(N'%s josifjosi', QUOTENAME('blob', N''''))
 
+DECLARE @as_database_name SYSNAME = N'WideWorldImporters';
 SELECT 
 	OC1.[object_class_name] 
 ,	OC1.[object_class_id] 
 ,	OC2.[object_class_name]
 ,	OC2.[object_class_id]
-,	REPLACE(O2S.[name_query], N'{db}', N'WideWorldImporters')
+,	REPLACE(O2S.[name_query], N'{db}', @as_database_name)
 FROM [config].[object_to_subobject] AS O2S
 	INNER JOIN [config].[object_class] AS OC1
 		ON O2S.[object_class_id] = OC1.[object_class_id]
@@ -1277,3 +1278,13 @@ SELECT
 
 SELECT * FROM sys.databases
 SELECT * FROM sys.objects
+
+SELECT * FROM [config].[object_class]
+SELECT * FROM [config].[object_to_subobject]
+
+SELECT * FROM [config].[database]
+
+SELECT * FROM [object].[table]
+SELECT * FROM [object].[table_column]
+
+

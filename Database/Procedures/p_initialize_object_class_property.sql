@@ -165,9 +165,10 @@ BEGIN
 				FROM 
 				(
 					VALUES 
-					('instance_id', 1)
-				,	('database_id', 2)
-				,	('object_id'  , 3)
+					('instance_id'		 , 1)
+				,	('database_id'		 , 2)
+				,	('object_id'		 , 3)
+				,	('source_object_id'  , 4)
 				) AS id_props ([object_class_property_name], [object_class_property_id])
 			)  AS id_props ([object_class_property_name], [object_class_property_id])
 
@@ -179,7 +180,7 @@ BEGIN
 			-- within schemacompare
 		SELECT 
 			OC.[object_class_id]
-		,	4 -- assign the next available object_property_id 
+		,	5 -- assign the next available object_property_id 
 		,	'name'
 		,	'SYSNAME'
 		,	0 -- doesn't have length

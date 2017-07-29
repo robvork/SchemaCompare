@@ -4,8 +4,8 @@
         <subobjectClassName> schema </subobjectClassName>
         <nameQuery>
             SELECT 
-                N'{db}'
-            ,	S.[name] AS [subobject_name] 
+                (SELECT [database_id] FROM sys.databases WHERE [name] = N'{db}')
+            ,	S.[{subobject_source_id}] AS [subobject_name] 
             FROM 
                 {db}.sys.schemas AS S
             ;
@@ -17,8 +17,8 @@
         <subobjectClassName> table </subobjectClassName>
         <nameQuery>
             SELECT  
-                S.[name] AS [object_name]
-            ,	T.[name] AS [subobject_name]
+                S.[{object_source_id}] AS [object_name]
+            ,	T.[{subobject_source_id}] AS [subobject_name]
             FROM 
                 {db}.sys.tables AS T
             INNER JOIN 
@@ -33,8 +33,8 @@
         <subobjectClassName> view </subobjectClassName>
         <nameQuery>
         SELECT  
-            S.[name] AS [object_name]
-        ,	V.[name] AS [subobject_name]
+            S.[{object_source_id}] AS [object_name]
+        ,	V.[{subobject_source_id}] AS [subobject_name]
         FROM 
             {db}.sys.views AS V
         INNER JOIN 
@@ -49,8 +49,8 @@
         <subobjectClassName> procedure </subobjectClassName>
         <nameQuery>
         SELECT  
-            S.[name] AS [object_name]
-        ,	P.[name] AS [subobject_name]
+            S.[{object_source_id}] AS [object_name]
+        ,	P.[{subobject_source_id}] AS [subobject_name]
         FROM 
             {db}.sys.procedures AS P
         INNER JOIN 
@@ -65,8 +65,8 @@
         <subobjectClassName> function </subobjectClassName>
         <nameQuery>
         SELECT  
-            S.[name] AS [object_name]
-        ,	F.[name] AS [subobject_name]
+            S.[{object_source_id}] AS [object_name]
+        ,	F.[{subobject_source_id}] AS [subobject_name]
         FROM 
             {db}.sys.objects AS F
         INNER JOIN 
@@ -82,8 +82,8 @@
         <subobjectClassName> table_column </subobjectClassName>
         <nameQuery>
         SELECT 
-            T.[name] AS [object_name]
-        ,	C.[name] AS [subobject_name]
+            T.[{object_source_id}] AS [object_name]
+        ,	C.[{subobject_source_id}] AS [subobject_name]
         FROM 
             {db}.sys.tables 
             AS T
@@ -100,8 +100,8 @@
         <subobjectClassName> view_column </subobjectClassName>
         <nameQuery>
             SELECT 
-                V.[name] AS [object_name]
-            ,   C.[name] AS [subobject_name]
+                V.[{object_source_id}] AS [object_name]
+            ,   C.[{subobject_source_id}] AS [subobject_name]
             FROM 
                 {db}.sys.views 
                 AS V
@@ -118,8 +118,8 @@
         <subobjectClassName> procedure_param </subobjectClassName>
         <nameQuery>
         SELECT 
-            P.[name] AS [object_name]
-        ,	M.[name] AS [subobject_name]
+            P.[{object_source_id}] AS [object_name]
+        ,	M.[{object_source_id}] AS [subobject_name]
         FROM 
             {db}.sys.procedures 
             AS P 
@@ -135,8 +135,8 @@
         <subobjectClassName> function_param </subobjectClassName>
         <nameQuery>
         SELECT 
-            F.[name] AS [object_name]
-        ,	M.[name] AS [subobject_name]
+            F.[{object_source_id}] AS [object_name]
+        ,	M.[{subobject_source_id}] AS [subobject_name]
         FROM 
             {db}.sys.objects 
             AS F

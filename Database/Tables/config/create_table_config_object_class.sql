@@ -2,10 +2,11 @@ DROP TABLE IF EXISTS [config].[object_class];
 
 CREATE TABLE [config].[object_class]
 (
-	[object_class_id] [config].[ID] 
-,	[object_class_name] [config].[NAME] UNIQUE
-,	[object_class_source] NVARCHAR(MAX)
-,	[object_class_source_alias] NVARCHAR(10)
+	[object_class_id] [config].[ID] NOT NULL
+,	[object_class_name] [config].[NAME] UNIQUE NOT NULL
+,	[object_class_source] NVARCHAR(MAX) NOT NULL
+,	[object_class_source_alias] NVARCHAR(10) NOT NULL
+,	[object_class_source_object_id_column] SYSNAME NOT NULL
 ,	[table_schema_name] SYSNAME NOT NULL
 ,	[table_name] SYSNAME NOT NULL
 ,	[view_schema_name] SYSNAME NOT NULL
