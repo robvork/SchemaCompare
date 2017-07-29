@@ -19,8 +19,6 @@ CREATE PROCEDURE [config].[p_sync_object_to_subobject]
 ,
 	@ai_subobject_class_id INT = NULL
 ,
-	@as_input_table_name SYSNAME = NULL
-,
 	@ai_debug_level INT = 1
 )
 AS
@@ -262,24 +260,24 @@ BEGIN TRY
 
 	-- Validate/Set SubObject Class in [config].[object_class]
 	BEGIN
-		IF (@as_subobject_class_name IS NULL AND @ai_object_class_id IS NULL) 
+		IF (@as_subobject_class_name IS NULL AND @ai_subobject_class_id IS NULL) 
 			OR 
-		   (@as_subobject_class_name IS NOT NULL AND @ai_object_class_id IS NOT NULL)
+		   (@as_subobject_class_name IS NOT NULL AND @ai_subobject_class_id IS NOT NULL)
 		BEGIN
-			SET @ls_error_msg = N'Exactly one of @as_subobject_class_name or @ai_object_class_id must be specified';
+			SET @ls_error_msg = N'Exactly one of @as_subobject_class_name or @ai_subobject_class_id must be specified';
 		
 			RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
 		END;
 		ELSE IF @as_subobject_class_name IS NOT NULL
 		BEGIN
-			SET @ai_object_class_id = 
+			SET @ai_subobject_class_id = 
 			(
 				SELECT [object_class_id] 
 				FROM [config].[object_class] 
 				WHERE [object_class_name] = @as_subobject_class_name
 			);
 
-			IF @ai_object_class_id IS NULL
+			IF @ai_subobject_class_id IS NULL
 			BEGIN
 				SET @ls_error_msg = 
 				CONCAT 
@@ -293,19 +291,19 @@ BEGIN TRY
 				RAISERROR(@ls_error_msg, @li_error_severity, @li_error_state);
 			END;
 		END; 
-		ELSE IF @ai_object_class_id IS NOT NULL
+		ELSE IF @ai_subobject_class_id IS NOT NULL
 		BEGIN
 			IF NOT EXISTS
 			(
 				SELECT * 
 				FROM [config].[object_class] 
-				WHERE [object_class_id] = @ai_object_class_id
+				WHERE [object_class_id] = @ai_subobject_class_id
 			)
 			BEGIN
 				SET @ls_error_msg = 
 				CONCAT 
 				(
-					@ai_object_class_id
+					@ai_subobject_class_id
 				,	N' is not a valid object class ID'
 				); 
 			END; 
@@ -314,6 +312,7 @@ BEGIN TRY
 
 	-- Validate object and subobject are linked in [config].[object_to_subobject]
 	-- If they're linked, set mapping table variables and the refresh query
+	
 	BEGIN
 		IF NOT EXISTS
 		(
@@ -333,7 +332,9 @@ BEGIN TRY
 			SELECT 
 				@ls_object_mapping_table_schema = [mapping_table_schema]
 			,	@ls_object_mapping_table_name = [mapping_table_name]
-			,	@ls_object_mapping_query = [name_query]
+			-- replace the special {db} replace token with the name of the database we want to sync
+			-- also remove any semicolons so we can use this in a CTE
+			,	@ls_object_mapping_query = REPLACE(REPLACE([name_query], N'{db}', @as_database_name), N';', N'')
 			FROM [config].[object_to_subobject]
 			WHERE [object_class_id] = @ai_object_class_id 
 					  AND 
@@ -341,6 +342,49 @@ BEGIN TRY
 			;
 		END; 
 	END;
+
+	
+	SET @ls_sql = 
+	CONCAT 
+	(
+		N'
+		WITH current_values AS
+		(
+		', @ls_object_mapping_query, N'
+		)
+		INSERT INTO #object_to_subobject_current
+		  (
+			[object_name] 
+		  ,	[subobject_name]
+		  )
+		  SELECT 
+			[object_name]
+		  ,	[subobject_name] 
+		  FROM
+			current_values
+		  ;
+		'
+	); 
+
+	IF @ai_debug_level > 0
+	BEGIN
+		PRINT CONCAT(N'Executing the following in dynamic SQL:', @ls_newline, @ls_sql);
+	END;
+
+	IF @ai_debug_level > 1
+	BEGIN
+		SELECT 'current_values CTE';
+		EXEC(@ls_object_mapping_query);
+	END; 
+
+	EXEC(@ls_sql);
+
+	IF @ai_debug_level > 1
+	BEGIN
+		SELECT N'#object_to_subobject_current';
+		SELECT [object_name], [subobject_name] FROM #object_to_subobject_current;
+	END;
+
 
 
 END TRY
@@ -378,3 +422,27 @@ BEGIN CATCH
 END CATCH
 END;
 GO
+
+IF 1 = 1
+BEGIN
+	EXEC [config].[p_sync_object_to_subobject]
+
+	@as_instance_name = N'ASPIRING\SQL16'
+--,
+--	@ai_instance_id INT = NULL
+,
+	@as_database_name = N'WideWorldImporters'
+--,
+--	@ai_database_id INT = NULL
+,	
+	@as_object_class_name = N'table'
+--,
+--	@ai_object_class_id INT = NULL
+,	
+	@as_subobject_class_name = N'table_column'
+--,
+--	@ai_subobject_class_id INT = NULL
+,
+	@ai_debug_level = 2
+
+END;

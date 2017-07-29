@@ -8,6 +8,6 @@ $Query = "INSERT INTO [config].[instance] (instance_id, instance_name)
                                    VALUES (1          , 1          , 'WideWorldImporters');
          "
 
-#Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
+Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 
-Sync-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database -SourceServerInstance $ServerInstance -SourceDatabase $SourceDatabase -verbose #-ObjectClassName "Table" 
+#Sync-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database -SourceServerInstance $ServerInstance -SourceDatabase $SourceDatabase -verbose #-ObjectClassName "Table" 

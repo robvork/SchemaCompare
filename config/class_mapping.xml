@@ -4,7 +4,7 @@
         <subobjectClassName> schema </subobjectClassName>
         <nameQuery>
             SELECT 
-                DB_NAME() AS [object_name]
+                N'{db}'
             ,	S.[name] AS [subobject_name] 
             FROM 
                 {db}.sys.schemas AS S
@@ -17,10 +17,13 @@
         <subobjectClassName> table </subobjectClassName>
         <nameQuery>
             SELECT  
-                SCHEMA_NAME([schema_id]) AS [object_name]
+                S.[name] AS [object_name]
             ,	T.[name] AS [subobject_name]
             FROM 
                 {db}.sys.tables AS T
+            INNER JOIN 
+                {db}.sys.schemas AS S
+                    ON T.[schema_id] = S.[schema_id]
             ;
         </nameQuery>
     </classMapping>
@@ -46,10 +49,13 @@
         <subobjectClassName> procedure </subobjectClassName>
         <nameQuery>
         SELECT  
-            SCHEMA_NAME([schema_id]) AS [object_name]
+            S.[name] AS [object_name]
         ,	P.[name] AS [subobject_name]
         FROM 
             {db}.sys.procedures AS P
+        INNER JOIN 
+            {db}.sys.schemas AS S
+                ON P.[schema_id] = S.[schema_id]
         ;
         </nameQuery>
     </classMapping>
@@ -59,10 +65,13 @@
         <subobjectClassName> function </subobjectClassName>
         <nameQuery>
         SELECT  
-            SCHEMA_NAME([schema_id]) AS [object_name]
+            S.[name] AS [object_name]
         ,	F.[name] AS [subobject_name]
         FROM 
             {db}.sys.objects AS F
+        INNER JOIN 
+            {db}.sys.schemas AS S
+                ON F.[schema_id] = S.[schema_id]
         WHERE F.[type] IN (N'FN', N'FT', N'IF')
         ;
         </nameQuery>

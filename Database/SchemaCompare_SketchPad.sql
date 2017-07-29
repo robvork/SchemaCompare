@@ -1253,9 +1253,27 @@ SELECT
 ,	OC1.[object_class_id] 
 ,	OC2.[object_class_name]
 ,	OC2.[object_class_id]
-,	O2S.[name_query]
+,	REPLACE(O2S.[name_query], N'{db}', N'WideWorldImporters')
 FROM [config].[object_to_subobject] AS O2S
 	INNER JOIN [config].[object_class] AS OC1
 		ON O2S.[object_class_id] = OC1.[object_class_id]
 	INNER JOIN [config].[object_class] AS OC2
 		ON O2S.[subobject_class_id] = OC2.[object_class_id]
+
+
+SELECT * FROM WideWorldImporters.sys.tables
+SELECT * FROM WideWorldImporters.sys.schemas
+
+SELECT  
+            S.[name] AS [object_name]
+        ,	V.[name] AS [subobject_name]
+        FROM 
+            WideWorldImporters.sys.views AS V
+        INNER JOIN 
+            WideWorldImporters.sys.schemas AS S
+                ON V.[schema_id] = S.[schema_id]
+        ;
+
+
+SELECT * FROM sys.databases
+SELECT * FROM sys.objects
