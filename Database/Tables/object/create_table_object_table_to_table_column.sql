@@ -4,12 +4,12 @@
 
     CREATE TABLE [object].[table_to_table_column]
     (
-        [object_class_id] INT NOT NULL
-    ,   [subobject_class_id] INT NOT NULL
+        [object_id] INT NOT NULL
+    ,   [subobject_id] INT NOT NULL
     ,   CONSTRAINT pk_table_to_table_column PRIMARY KEY
         (
-            [object_class_id]
-        ,   [subobject_class_id]
+            [object_id]
+        ,   [subobject_id]
         )  
     );
     GO

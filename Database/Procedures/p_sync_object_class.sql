@@ -31,7 +31,7 @@ AS
 	We will use a merge statement since we need to do the classical insert/update/delete pattern
 
 	Here's an example from T-SQL Querying:
-	MERGE INTO dbo.Customers AS TGT -- define the source of data. will be @as_object_class_current_values_table_name in our case
+	MERGE INTO dbo.Customers AS T -- define the source of data. will be @as_object_class_current_values_table_name in our case
 	USING dbo.CustomersStage AS SRC -- define the target of data. will be the table corresponding to @ai_object_class_id in our case
 	ON TGT.custid = SRC.custid -- define the matching condition. will be matched on instance_id, database_id, and name in our case
 	WHEN MATCHED THEN -- what happens when the matching condition holds? like in the example, we update in our case
@@ -79,7 +79,7 @@ AS
 		FROM <target_table>
 		WHERE [instance_id] = @ai_instance_id AND [database_id] = @ai_database_id
 	)
-	MERGE INTO target_rows AS TGT
+	MERGE INTO target_rows AS T
 	...
 
 	---------------
@@ -90,7 +90,7 @@ AS
 		FROM <target_table>
 		WHERE [instance_id] = @ai_instance_id AND [database_id] = @ai_database_id
 	)
-	MERGE INTO target_rows AS TGT
+	MERGE INTO target_rows AS T
 	USING @as_object_class_current_values_table_name AS SRC
 	ON TGT.[name] = SRC.[name]
 	WHEN MATCHED THEN UPDATE
@@ -346,7 +346,9 @@ BEGIN TRY
 	WHERE 
 		[object_class_id] = @ai_object_class_id
 		AND
-		[object_class_property_name] NOT IN ('database_id', 'instance_id')
+		[object_class_property_name] NOT IN ('database_id', 'instance_id', 'object_id')
+		AND
+		[object_class_property_is_enabled] = 1
 	;
 
 	IF @ai_debug_level > 1
@@ -387,7 +389,8 @@ BEGIN TRY
 			WHERE [instance_id] = ', @ai_instance_id, N' AND [database_id] = ', @ai_database_id, N'
 		)
 		MERGE INTO target_rows AS TGT'
-	); 
+	) 
+	; 
 
 	IF @ai_debug_level > 1
 		SELECT 'merge_target' AS [description], @ls_sql_merge_target AS 'code'
@@ -397,8 +400,9 @@ BEGIN TRY
 	CONCAT 
 	(
 		N'USING ', @as_input_table_name ,' AS SRC'
-	);
-
+	)
+	;
+	
 	IF @ai_debug_level > 1
 		SELECT 'merge_source' AS [description], @ls_sql_merge_source AS 'code'
 
@@ -426,7 +430,7 @@ BEGIN TRY
 		IF @ai_debug_level > 1
 			SELECT @ls_key_column AS '@ls_key_column'
 
-		SET @ls_sql_merge_matching_condition += 
+		SET @ls_sql_merge_matching_condition +=
 		CONCAT 
 		(
 			@ls_newline, N'AND SRC.', @ls_key_column, N' COLLATE DATABASE_DEFAULT = TGT.', @ls_key_column, N' COLLATE DATABASE_DEFAULT'
@@ -441,12 +445,12 @@ BEGIN TRY
 	CONCAT
 	(
 		N'ON '
-		-- extract the string beginning at the first occurrence of SRC
+		-- extract the string beginning at the first occurrence of S
 		-- this omits the first occurrence of 'AND'
 	,	SUBSTRING
 		(
 			@ls_sql_merge_matching_condition
-		,	CHARINDEX(N'SRC', @ls_sql_merge_matching_condition)
+		,	CHARINDEX(N'S', @ls_sql_merge_matching_condition)
 		,	LEN(@ls_sql_merge_matching_condition) 
 		)
 	)
@@ -484,43 +488,47 @@ BEGIN TRY
 		INTO @ls_val_column;
 	END;
 
-	SET @ls_sql_merge_when_matched = 
-	CONCAT 
-	(
-		N'WHEN MATCHED THEN UPDATE SET '
-	,	@ls_newline 
-		-- extract the substring starting at the first occurrence of TGT.
-		-- this omits the first newline, comma, and space
-	,	SUBSTRING 
+	-- Do not create an update statement if there are no value columns to update
+	IF @ls_sql_merge_update_set_statements <> N''
+	BEGIN
+		SET @ls_sql_merge_when_matched = 
+		CONCAT 
 		(
-			@ls_sql_merge_update_set_statements
-		,	CHARINDEX('TGT', @ls_sql_merge_update_set_statements)
-		,	LEN(@ls_sql_merge_update_set_statements)
-		)
-	); 
-
+			N'WHEN MATCHED THEN UPDATE SET '
+		,	@ls_newline 
+			-- extract the substring starting at the first occurrence of TGT.
+			-- this omits the first newline, comma, and space
+		,	SUBSTRING 
+			(
+				@ls_sql_merge_update_set_statements
+			,	CHARINDEX('T', @ls_sql_merge_update_set_statements)
+			,	LEN(@ls_sql_merge_update_set_statements)
+			)
+		); 
+	END;
 	
 	END;
 	IF @ai_debug_level > 1
 		SELECT 'WHEN MATCHED' AS [description], @ls_sql_merge_when_matched AS 'code'
-	-- Generate insert values for rows in SRC which are not found in TGT
+	-- Generate insert values for rows in S which are not found in T
 		-- Note: since we validated that there is at least one column, the source and target headers here will each be nonempty
 	-- Target header
 		-- (key1, key2, ... , keyn, val1, val2, ... , valm) 
 			-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively
 	BEGIN
 	BEGIN 
-	SET @ls_sql_merge_insert_target_header = N'';
+	SET @ls_sql_merge_insert_target_header = CAST(N'' AS NVARCHAR(MAX));
 
 	FETCH FIRST FROM key_column_cursor 
 	INTO @ls_key_column; 
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-		SET @ls_sql_merge_insert_target_header += 
+		SET @ls_sql_merge_insert_target_header = 
 		CONCAT 
 		(
-			N', ', @ls_key_column
+			@ls_sql_merge_insert_target_header
+		,	N', ', @ls_key_column
 		); 
 
 		FETCH NEXT FROM key_column_cursor 
@@ -532,10 +540,11 @@ BEGIN TRY
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-		SET @ls_sql_merge_insert_target_header += 
+		SET @ls_sql_merge_insert_target_header = 
 		CONCAT 
 		(
-			N', ', @ls_val_column
+			@ls_sql_merge_insert_target_header
+		,	N', ', @ls_val_column
 		); 
 
 		FETCH NEXT FROM val_column_cursor 
@@ -552,12 +561,12 @@ BEGIN TRY
 	,	N','
 	,	N'database_id'
 	,	N','
-	,	SUBSTRING
+	,	CAST(SUBSTRING
 		(
 			@ls_sql_merge_insert_target_header
 		,	CHARINDEX(N',', @ls_sql_merge_insert_target_header) + 1
 		,	LEN(@ls_sql_merge_insert_target_header)
-		)
+		) AS NVARCHAR(MAX))
 	,	N')'
 	); 
 	END;
@@ -573,13 +582,14 @@ BEGIN TRY
 	FETCH FIRST FROM key_column_cursor 
 	INTO @ls_key_column; 
 
-	SET @ls_sql_merge_insert_source_header = N'';
+	SET @ls_sql_merge_insert_source_header = CAST(N'' AS NVARCHAR(MAX));
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-		SET @ls_sql_merge_insert_source_header +=  
+		SET @ls_sql_merge_insert_source_header =
 		CONCAT 
 		(
-			N', SRC.', @ls_key_column
+			@ls_sql_merge_insert_source_header
+		,	N', SRC.', @ls_key_column
 		); 
 
 		FETCH NEXT FROM key_column_cursor 
@@ -592,10 +602,11 @@ BEGIN TRY
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-		SET @ls_sql_merge_insert_source_header +=  
+		SET @ls_sql_merge_insert_source_header =  
 		CONCAT 
 		(
-			N', SRC.', @ls_val_column
+			@ls_sql_merge_insert_source_header
+		,	N', SRC.', @ls_val_column
 		); 
 
 		FETCH NEXT FROM val_column_cursor 
@@ -606,18 +617,18 @@ BEGIN TRY
 	SET @ls_sql_merge_insert_source_header = 
 	CONCAT 
 	(
-		N'VALUES'
+		N'VALUES' 
 	,	N'('
 	,	@ai_instance_id
 	,	N', '
 	,	@ai_database_id
 	,	N', '
-	,	SUBSTRING 
+	,	CAST(SUBSTRING 
 		(
 			@ls_sql_merge_insert_source_header
 		,	CHARINDEX(N',', @ls_sql_merge_insert_source_header) + 1
 		,	LEN(@ls_sql_merge_insert_source_header)
-		)
+		) AS NVARCHAR(MAX))
 	,	N')'
 	)
 	;
@@ -672,7 +683,7 @@ BEGIN TRY
 		FROM <target_table>
 		WHERE [instance_id] = @ai_instance_id AND [database_id] = @ai_database_id
 	)
-	MERGE INTO target_rows AS TGT
+	MERGE INTO target_rows AS T
 	---------------------------------------------------------------------------
 	USING @as_object_class_current_values_table_name AS SRC
 	---------------------------------------------------------------------------
@@ -683,23 +694,49 @@ BEGIN TRY
 	---------------------------------------------------------------------------
 	WHEN NOT MATCHED THEN INSERT 
 	(key1, key2, ... , keyn, val1, val2, ... , valm) for key column keyi and val column valj
-	SRC.key1, SRC.key2, ... , SRC.keyn, SRC.val1, SRC.val2, ... , SRC.valm for keyi and valj matching above
+	VALUES (SRC.key1, SRC.key2, ... , SRC.keyn, SRC.val1, SRC.val2, ... , SRC.valm) for keyi and valj matching above
 	---------------------------------------------------------------------------
-	WHEN NOT MATCHED BY SOURCE
+	WHEN NOT MATCHED BY SOURCE THEN
 	DELETE
 	---------------------------------------------------------------------------
 	*/
+	
+	--SET @ls_sql = N'';
+	--SET @ls_sql = CONCAT(@ls_sql, @ls_sql_merge_target, @ls_newline);
+	--SET @ls_sql = CONCAT(@ls_sql, @ls_sql_merge_source, @ls_newline);
+	--SET @ls_sql = CONCAT(@ls_sql, @ls_sql_merge_matching_condition, @ls_newline);
+	--SET @ls_sql = CONCAT(@ls_sql, CAST(SUBSTRING(@ls_sql_merge_when_matched, 1, 3000) AS NVARCHAR(MAX)));
+	--SET @ls_sql = CONCAT(@ls_sql, CAST(SUBSTRING(@ls_sql_merge_when_matched, 3001, 3999) AS NVARCHAR(MAX)), @ls_newline);
+	--SET @ls_sql = CONCAT(@ls_sql, @ls_sql_merge_when_not_matched_by_target, @ls_newline);
+	--SET @ls_sql = CONCAT(@ls_sql, @ls_sql_merge_when_not_matched_by_source, @ls_newline);
+	--SET @ls_sql = CONCAT(@ls_sql, N';');
+
+	
+	--SELECT * 
+	--FROM 
+	--(
+	--	VALUES 
+	--	('merge_target', LEN(@ls_sql_merge_target))
+	--,	('merge_source', LEN(@ls_sql_merge_source))
+	--,	('merge_matching_condition', LEN(@ls_sql_merge_matching_condition))
+	--,	('merge_when_matched', LEN(@ls_sql_merge_when_matched))
+	--,	('merge_not_matched_by_target', LEN(@ls_sql_merge_when_not_matched_by_target))
+	--,	('merge_not_matched_by_source', LEN(@ls_sql_merge_when_not_matched_by_source))
+	--) AS lengths(descr, str_length)
+	--RETURN 0;
+
 	SET @ls_sql = 
 	CONCAT 
 	(
-		@ls_sql_merge_target						, @ls_newline 
-	,	@ls_sql_merge_source						, @ls_newline 
-	,	@ls_sql_merge_matching_condition			, @ls_newline 
-	,	@ls_sql_merge_when_matched					, @ls_newline 
-	,	@ls_sql_merge_when_not_matched_by_target	, @ls_newline 
-	,	@ls_sql_merge_when_not_matched_by_source    , @ls_newline
+		CAST(@ls_sql_merge_target AS NVARCHAR(MAX))							, @ls_newline 
+	,	CAST(@ls_sql_merge_source AS NVARCHAR(MAX))							, @ls_newline 
+	,	CAST(@ls_sql_merge_matching_condition AS NVARCHAR(MAX))				, @ls_newline 
+	,	CAST(@ls_sql_merge_when_matched AS NVARCHAR(MAX))					, @ls_newline 
+	,	CAST(@ls_sql_merge_when_not_matched_by_target AS NVARCHAR(MAX))		, @ls_newline 
+	,	CAST(@ls_sql_merge_when_not_matched_by_source AS NVARCHAR(MAX))     , @ls_newline 
 	,	N';'
-	); 
+	) 
+	; 
 
 	-- Perform the merge
 	BEGIN 
@@ -757,10 +794,20 @@ END CATCH
 END;
 GO
 
+--DROP TABLE IF EXISTS #current; 
+
+--SELECT *
+--INTO #current 
+--FROM sys.databases 
+
+
 --EXEC [config].[p_sync_object_class]
---	@as_object_class_name = 'table'
+--	@as_object_class_name = 'database'
 --,	@as_input_table_name = '#current'
---,	@ai_debug_level = 1
+--,	@ai_debug_level = 2
 --,   @as_instance_name = N'ASPIRING\SQL16'
 --,	@as_database_name = 'WideWorldImporters'
 --;
+
+--SELECT * FROM [object].[database]
+--SELECT * FROM [config].[database]

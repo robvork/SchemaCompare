@@ -167,6 +167,7 @@ BEGIN
 					VALUES 
 					('instance_id', 1)
 				,	('database_id', 2)
+				,	('object_id'  , 3)
 				) AS id_props ([object_class_property_name], [object_class_property_id])
 			)  AS id_props ([object_class_property_name], [object_class_property_id])
 
@@ -178,7 +179,7 @@ BEGIN
 			-- within schemacompare
 		SELECT 
 			OC.[object_class_id]
-		,	3 -- assign the next available object_property_id 
+		,	4 -- assign the next available object_property_id 
 		,	'name'
 		,	'SYSNAME'
 		,	0 -- doesn't have length
@@ -195,7 +196,7 @@ BEGIN
 			OC.[object_class_id]
 		-- number each property arbitrarily separately for each object class
 		-- start the numbering at 2 so that property_id = 1 is always parent_object_id
-		,	3 + ROW_NUMBER() OVER 
+		,	4 + ROW_NUMBER() OVER 
 			(
 				PARTITION BY OC.[object_class_id]
 				ORDER BY (SELECT NULL)

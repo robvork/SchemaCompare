@@ -4,12 +4,12 @@
 
     CREATE TABLE [object].[view_to_view_column]
     (
-        [object_class_id] INT NOT NULL
-    ,   [subobject_class_id] INT NOT NULL
+        [object_id] INT NOT NULL
+    ,   [subobject_id] INT NOT NULL
     ,   CONSTRAINT pk_view_to_view_column PRIMARY KEY
         (
-            [object_class_id]
-        ,   [subobject_class_id]
+            [object_id]
+        ,   [subobject_id]
         )  
     );
     GO

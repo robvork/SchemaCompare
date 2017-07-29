@@ -36,7 +36,7 @@
              (
                 SELECT * 
                 FROM {db}.sys.tables 
-                WHERE sys.tables.[object_id] = {alias}.[object_id]
+                WHERE {db}.sys.tables.[object_id] = {alias}.[object_id]
              )
             
         </source>

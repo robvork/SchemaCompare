@@ -85,7 +85,7 @@ BEGIN TRY
 		END
 	,	N' '
 	,	CASE 
-			WHEN OCP.[object_class_property_is_nullable] = 1 
+			WHEN OCP.[object_class_property_is_nullable] = 1 OR OCP.[object_class_property_is_enabled] = 0
 				THEN N'NULL'
 			ELSE 
 					 N'NOT NULL'

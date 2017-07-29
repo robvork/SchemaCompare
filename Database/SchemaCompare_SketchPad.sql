@@ -1240,3 +1240,8 @@ SELECT
 
 	SELECT P.*
                                 FROM wideworldimporters.sys.procedures AS P
+
+SELECT * FROM [config].[instance]
+SELECT * FROM [config].[database]
+
+SELECT * FROM [config].[object_class_property] WHERE [object_class_property_is_enabled] = 1

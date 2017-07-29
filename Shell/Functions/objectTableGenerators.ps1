@@ -53,6 +53,9 @@ function Get-SchemaCompareObjectClassTableSQL
     $ColumnSQL[0] = "  " + $ColumnSQL[0]
     $ColumnSQL = $ColumnSQL -join "`n, "
 
+    # add an identity property to object_id so it doesn't have to be set manually
+    $ColumnSQL = ($ColumnSQL -replace "\[object_id\] INT", "[object_id] INT IDENTITY(1, 1)")
+
     # Put all objects into an [object] schema table bearing the object class name
     $TableSQL = @(
                     "DROP TABLE IF EXISTS [object].[$Name];"
@@ -111,12 +114,12 @@ function New-SchemaCompareObjectToSubobjectMappingTableScript
 
     CREATE TABLE [$MappingTableSchema].[$MappingTableName]
     (
-        [object_class_id] INT NOT NULL
-    ,   [subobject_class_id] INT NOT NULL
+        [object_id] INT NOT NULL
+    ,   [subobject_id] INT NOT NULL
     ,   CONSTRAINT pk_${MappingTableName} PRIMARY KEY
         (
-            [object_class_id]
-        ,   [subobject_class_id]
+            [object_id]
+        ,   [subobject_id]
         )  
     );
     GO
