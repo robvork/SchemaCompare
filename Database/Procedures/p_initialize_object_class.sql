@@ -5,6 +5,8 @@ CREATE PROCEDURE [config].[p_initialize_object_class]
 (
 	@ai_debug_level INT = 0
 ,	@as_input_table_name SYSNAME
+,	@as_metadata_keys_table_name SYSNAME
+,	@as_object_keys_table_name SYSNAME
 )
 AS
 BEGIN
@@ -49,6 +51,44 @@ BEGIN
 	,	view_name SYSNAME NOT NULL
 	);
 
+	DROP TABLE IF EXISTS #metadata_keys; 
+
+	CREATE TABLE #metadata_keys
+	(
+		[object_class_id] [config].[ID] NOT NULL
+	,	[metadata_key_column_id]   INT
+	,	[metadata_key_column_name] SYSNAME
+	,	[metadata_key_column_type] SYSNAME
+	,	[metadata_key_column_source] SYSNAME
+	,	CONSTRAINT pk_config_object_class
+		PRIMARY KEY
+		(
+			[object_class_id]
+		,	[metadata_key_column_id]
+		)
+	);
+
+	DROP TABLE IF EXISTS #object_keys;
+	
+	CREATE TABLE #object_keys
+	(
+		[object_class_id] [config].[ID] NOT NULL
+	,	[object_key_column_id]   INT
+	,	[object_key_column_name] SYSNAME
+	,	[object_key_column_type] SYSNAME
+	,	[object_key_column_source] SYSNAME
+	,	CONSTRAINT pk_config_object_class
+		PRIMARY KEY
+		(
+			[object_class_id]
+		,	[object_key_column_id]
+		)
+	);
+
+	/*******************************************************************************
+	Extract data from input tables into procedure temp tables
+	*******************************************************************************/
+
 	SET @ls_sql = CONCAT 
 	(
 		N'
@@ -78,17 +118,69 @@ BEGIN
 		PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
 	
 	EXEC(@ls_sql);
+
+	SET @ls_sql = CONCAT 
+	(
+		N'
+		INSERT INTO #metadata_keys 
+		(
+			[object_class_id] 
+		,	[metadata_key_column_id]  
+		,	[metadata_key_column_name] 
+		,	[metadata_key_column_type] 
+		,	[metadata_key_column_source] 
+		)
+		SELECT 
+			M.[object_class_id] 
+		,	ROW_NUMBER() OVER (ORDER BY (SELECT NULL) PARTITION BY M.[object_class_id])
+		,	M.[metadata_key_column_name] 
+		,	M.[metadata_key_column_type] 
+		,	M.[metadata_key_column_source] 
+		FROM ', @as_metadata_keys_table_name, N' AS M
+		;'
+	);
 	
-	IF @ai_debug_level > 1
-	BEGIN
-		SELECT '#object_class BEFORE setting IDs';
-		SELECT * FROM #object_class; 
-	END;
+	IF @ai_debug_level > 0
+		PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
+	
+	EXEC(@ls_sql);
+
+	SET @ls_sql = CONCAT 
+	(
+		N'
+		INSERT INTO #object_keys
+		(
+			[object_class_id] 
+		,	[object_key_column_id]   
+		,	[object_key_column_name] 
+		,	[object_key_column_type] 
+		,	[object_key_column_source]
+		)
+		SELECT 
+			O.[object_class_id] 
+		,	ROW_NUMBER() OVER (ORDER BY (SELECT NULL) PARTITION BY O.[object_class_id])
+		,	O.[object_key_column_name] 
+		,	O.[object_key_column_type] 
+		,	O.[object_key_column_source] 
+		FROM ', @as_object_keys_table_name, N' AS O
+		;'
+	);
+	
+	IF @ai_debug_level > 0
+		PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
+	
+	EXEC(@ls_sql);
 	
 	/*******************************************************************************
 	Generate a new object_class_id for each row of #object_class. 
 	Set #object_class.[row_num] to these values
 	*******************************************************************************/
+	IF @ai_debug_level > 1
+	BEGIN
+		SELECT '#object_class BEFORE setting IDs';
+		SELECT * FROM #object_class; 
+	END;
+
 	EXECUTE [config].[p_get_next_id] 
 		@as_schema_name = 'config'
 	,	@as_table_name = 'object_class'

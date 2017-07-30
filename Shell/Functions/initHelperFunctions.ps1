@@ -23,19 +23,17 @@ function Initialize-SchemaCompareObjectClass
 
     $ObjectClasses = ([xml](Get-Content $ConfigFilePath -Raw)).ObjectClasses.ObjectClass 
 
-    $RowSet =  ($ObjectClasses |
+    $ObjectClassRowSet =  ($ObjectClasses |
                 # Add quotes, trim whitespace, match name with table column name 
                 Select-Object   @{n="object_class_name"; e={"'" + $_.name.Trim() + "'"}}, 
                                 @{n="object_class_source"; e={"'" + ($_.source.Trim() -replace "(?<!')'(?!')", "''")  + "'"}},
                                 @{n="object_class_source_alias"; e={"'" + $_.source_alias.Trim() + "'"}},
-                                @{n="object_class_source_object_id_column"; e={"'" + $_.source_id_column.Trim() + "'"}},
                                 @{n="view_schema_name"; e={"'" + $_.view_schema_name.Trim() + "'"}},
                                 @{n="view_name"; e={"'" + $_.view_name.Trim() + "'"}} |
                 # Combine properties into one string separated by a comma, then a line break
                 ForEach-Object { @( $_.object_class_name
                                     $_.object_class_source 
                                     $_.object_class_source_alias
-                                    $_.object_class_source_object_id_column
                                     $_.view_schema_name
                                     $_.view_name
                                     ) -join ",`n"
@@ -50,49 +48,49 @@ function Initialize-SchemaCompareObjectClass
                                 }) -join ",`n" # combine all rows into one string, separating
                                                 # by a comma, then a line break
                 
-    $ColumnList = @(
+    $ObjectClassColumnList = @(
                         "object_class_name"
                         "object_class_source"
                         "object_class_source_alias"
-                        "object_class_source_object_id_column"
                         "view_schema_name"
                         "view_name"
                 ) -join ",`n"
-    $InputTableName = "#object_class_input"
-    $InsertHeader = @(
-                        "INSERT INTO ${InputTableName}"
+    $ObjectClassInputTableName = "#object_class_input"
+    $ObjectClassInsertHeader = @(
+                        "INSERT INTO ${ObjectClassInputTableName}"
                         "("
-                            $ColumnList
+                            $ObjectClassColumnList
                         ")"
                         "VALUES"
                     ) -join "`n"
 
-    $InsertSQL = @(
-                    $InsertHeader 
-                    $RowSet
+    $ObjectClassInsertSQL = @(
+                    $ObjectClassInsertHeader 
+                    $ObjectClassRowSet
                 ) -join "`n"
                     
     
     $Query = "
-            DROP TABLE IF EXISTS ${InputTableName};
+            DROP TABLE IF EXISTS ${ObjectClassInputTableName};
 
-            CREATE TABLE ${InputTableName}
+            CREATE TABLE ${ObjectClassInputTableName}
             (
                 object_class_name NVARCHAR(128) NOT NULL
             ,   object_class_source NVARCHAR(MAX) NOT NULL
             ,   object_class_source_alias NVARCHAR(10) NOT NULL
-            ,   object_class_source_object_id_column SYSNAME NOT NULL
             ,   view_schema_name SYSNAME NOT NULL
             ,   view_name SYSNAME NOT NULL
             );
 
-            $InsertSQL ;
+            $ObjectClassInsertSQL ;
     
             EXECUTE [config].[p_initialize_object_class]
                       @as_input_table_name = '$InputTableName' 
              "
     Write-Verbose "Executing the following SQL query:`n $Query"
     Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
+
+
 }
 
 function Initialize-SchemaCompareObjectClassToSubobjectClass
