@@ -64,7 +64,7 @@ BEGIN TRY
 	(
 		N'
 			SELECT 
-			[object_class_name]
+			  [object_class_name]
 			, [object_class_id]
 			, CONCAT
 			( 

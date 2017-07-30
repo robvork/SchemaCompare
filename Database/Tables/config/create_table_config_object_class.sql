@@ -6,7 +6,6 @@ CREATE TABLE [config].[object_class]
 ,	[object_class_name] [config].[NAME] UNIQUE NOT NULL
 ,	[object_class_source] NVARCHAR(MAX) NOT NULL
 ,	[object_class_source_alias] NVARCHAR(10) NOT NULL
-,	[object_class_source_object_id_column] SYSNAME NOT NULL
 ,	[table_schema_name] SYSNAME NOT NULL
 ,	[table_name] SYSNAME NOT NULL
 ,	[view_schema_name] SYSNAME NOT NULL

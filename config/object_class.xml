@@ -1,39 +1,93 @@
 <objectClasses>
     <objectClass>
         <name> database </name>
+
         <source>
             {db}.sys.databases AS {alias} 
         </source>
         <source_alias> D </source_alias>
-        <source_id_column> database_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> database_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> databases </view_name>
     </objectClass>
 
     <objectClass>
         <name> schema </name>
+
         <source>
             {db}.sys.schemas AS {alias}
         </source>
         <source_alias> S </source_alias>
-        <source_id_column> schema_id </source_id_column>
+        
+        <metadata_keys>
+            <metadata_key>
+                <name> schema_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> schema_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> schemas </view_name>
     </objectClass>
 
     <objectClass>
         <name> table </name>
+
         <source> 
             {db}.sys.tables AS {alias}
         </source>
         <source_alias> T </source_alias>
-        <source_id_column> object_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> schema_id </name>
+                <type> INT </type>
+            </metadata_key>
+            <metadata_key>
+                <name> object_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> schema_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+            <object_key>
+                <name> table_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> tables </view_name>
     </objectClass>
 
     <objectClass>
         <name> table_column </name>
+
         <source> 
             {db}.sys.columns AS {alias} WHERE EXISTS 
              (
@@ -44,24 +98,70 @@
             
         </source>
         <source_alias> C </source_alias>
-        <source_id_column> column_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> object_id </name>
+                <type> INT </type>
+            </metadata_key>
+            <metadata_key>
+                <name> column_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> table_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+            <object_key>
+                <name> column_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> columns </view_name>
     </objectClass>
 
     <objectClass>
         <name> view </name>
+
         <source> 
             {db}.sys.views AS {alias}
         </source>
         <source_alias> V </source_alias>
-        <source_id_column> object_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> schema_id </name>
+                <type> INT </type>
+            </metadata_key>
+            <metadata_key>
+                <name> object_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> schema_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+            <object_key>
+                <name> view_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> views </view_name>
     </objectClass>
 
     <objectClass>
         <name> view_column </name>
+
         <source> 
             {db}.sys.columns AS {alias} WHERE EXISTS 
             (
@@ -71,24 +171,70 @@
             )
         </source>
         <source_alias> C </source_alias>
-        <source_id_column> column_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> object_id </name>
+                <type> INT </type>
+            </metadata_key>
+            <metadata_key>
+                <name> column_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> view_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+            <object_key>
+                <name> column_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> columns </view_name>
     </objectClass>
 
     <objectClass>
         <name> procedure </name>
+
         <source> 
             {db}.sys.procedures AS {alias}
         </source>
         <source_alias> P </source_alias>
-        <source_id_column> object_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> schema_id </name>
+                <type> INT </type>
+            </metadata_key>
+            <metadata_key>
+                <name> object_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> schema_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+            <object_key>
+                <name> procedure_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> procedures </view_name>
     </objectClass>
 
     <objectClass>
         <name> procedure_param </name>
+
         <source> 
             {db}.sys.parameters AS {alias} WHERE EXISTS
             (
@@ -98,24 +244,70 @@
             )
         </source>
         <source_alias> P </source_alias>
-        <source_id_column> parameter_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> object_id </name>
+                <type> INT </type>
+            </metadata_key>
+            <metadata_key>
+                <name> parameter_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> procedure_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+            <object_key>
+                <name> parameter_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> parameters </view_name>
     </objectClass>
 
     <objectClass>
         <name> function </name>
+
         <source> 
             {db}.sys.objects AS {alias} WHERE [type] IN (N'FN', N'FT', N'IF')
         </source>
         <source_alias> F </source_alias>
-        <source_id_column> object_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> schema_id </name>
+                <type> INT </type>
+            </metadata_key>
+            <metadata_key>
+                <name> object_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> schema_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+            <object_key>
+                <name> function_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> objects </view_name>
     </objectClass>
 
     <objectClass>
         <name> function_param </name>
+
         <source> 
              {db}.sys.parameters AS {alias} WHERE EXISTS
              (
@@ -127,7 +319,29 @@
              )
         </source>
         <source_alias> P </source_alias>
-        <source_id_column> parameter_id </source_id_column>
+
+        <metadata_keys>
+            <metadata_key>
+                <name> object_id </name>
+                <type> INT </type>
+            </metadata_key>
+            <metadata_key>
+                <name> parameter_id </name>
+                <type> INT </type>
+            </metadata_key>
+        </metadata_keys>
+        
+        <object_keys>
+            <object_key>
+                <name> function_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+            <object_key>
+                <name> parameter_name </name>
+                <type> SYSNAME </type>
+            </object_key>
+        </object_keys>
+        
         <view_schema_name> sys </view_schema_name>
         <view_name> parameters </view_name>
     </objectClass>

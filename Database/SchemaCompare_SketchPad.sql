@@ -1287,4 +1287,16 @@ SELECT * FROM [config].[database]
 SELECT * FROM [object].[table]
 SELECT * FROM [object].[table_column]
 
+SELECT * FROM sys.objects
+SELECT * FROM sys.schemas
+SELECT * FROM sys.tables
+SELECT * FROM sys.columns 
+SELECT * FROM sys.procedures 
+SELECT * FROM sys.parameters
+SELECT * FROM wideworldimporters.sys.views
 
+SELECT (SELECT 1), (SELECT 2)
+SELECT * FROM sys.databases
+
+SELECT * FROM sys.schemas
+SELECT * FROM sys.views
