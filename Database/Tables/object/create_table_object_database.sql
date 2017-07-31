@@ -85,6 +85,5 @@ CREATE TABLE [object].[database]
 (
   instance_id
 , database_id
-, database_id
 )
 );

@@ -102,18 +102,3 @@ function Sync-SchemaCompareObjectClass
     
 
 }
-
-function Sync-SchemaCompareObjectToSubobjectMapping
-{
-    [CmdletBinding()]
-    param 
-    (
-        $ServerInstance 
-    ,   
-        $Database
-    ,   
-        $ObjectClassName = $null 
-    ,
-        $SubobjectClassName = $null
-    )
-}

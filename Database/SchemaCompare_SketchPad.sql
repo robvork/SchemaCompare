@@ -1377,3 +1377,15 @@ WHERE [object_class_property_is_metadata_key] = 0
 	  AND 
 	  [object_class_property_is_object_key] = 0	
 ORDER BY OCP.[object_class_id], OCP.[object_class_property_id]
+
+SELECT metadata_key_column_source
+FROM [config].[object_class_metadata_key]
+
+SELECT * 
+FROM [config].[object_class_property] 
+WHERE [object_class_id] = 
+(
+	SELECT [object_class_id] 
+	FROM [config].[object_class] 
+	WHERE [object_class_name
+);

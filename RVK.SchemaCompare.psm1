@@ -1421,8 +1421,6 @@ function Install-SchemaCompare
     }
     Write-Verbose "...object class table create scripts generated"
 
-    return
-    
     # Run all the freshly generated scripts to create a table per object class
     $ObjectClassScriptPaths = (
                             Get-ChildItem -Path $ObjectScriptRoot -Filter *.sql | 
