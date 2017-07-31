@@ -24,7 +24,7 @@ BEGIN
 
 		CREATE TABLE #object_class_property
 		(
-			object_class_id INT NOT NULL PRIMARY KEY
+			object_class_id INT NOT NULL 
 		,	object_class_property_id INT NOT NULL
 		,	object_class_property_name NVARCHAR(128) NOT NULL
 		,	object_class_property_type_name SYSNAME NOT NULL
@@ -34,6 +34,7 @@ BEGIN
 		,	object_class_property_is_enabled BIT NOT NULL 
 		,	object_class_property_is_metadata_key BIT NOT NULL
 		,	object_class_property_is_object_key BIT NOT NULL
+		,	PRIMARY KEY([object_class_id], [object_class_property_id])
 		);
 
 		CREATE TABLE #view_column
@@ -200,6 +201,7 @@ BEGIN
 				WHERE 
 					MK.[object_class_id] = OC.[object_class_id]
 			) AS custom_metadata_keys([object_class_property_name], [object_class_property_type])
+		WHERE custom_metadata_keys.[object_class_property_name] NOT IN (N'instance_id', 'database_id')
 
 		UNION ALL 
 		-- All object classes have a set of 1 or more custom object keys
@@ -223,11 +225,31 @@ BEGIN
 				SELECT COUNT(*) 
 				FROM [config].[object_class_metadata_key] AS MK
 				WHERE MK.[object_class_id] = OC.[object_class_id]
+					  AND 
+					  MK.[metadata_key_column_name] NOT IN (N'instance_id', 'database_id')
 			) + 
 			ROW_NUMBER() OVER (PARTITION BY OC.[object_class_id] 
 							   ORDER BY (SELECT NULL) 
 							  )
+		,	custom_object_keys.[object_class_property_name]
+		,	custom_object_keys.[object_class_property_type]
+		,	0 -- doesn't have length
+		,	NULL -- NULL length
+		,	0 -- is not nullable
+		,	1 -- enabled 
+		,   0 -- is not a metadata key
+		,	1 -- is an object key
 		FROM [config].[object_class] AS OC
+		CROSS APPLY 
+		(
+			SELECT 
+				OK.[object_key_column_name]
+			,	OK.[object_key_column_type]
+			FROM [config].[object_class_object_key] AS OK
+			WHERE OK.[object_class_id] = OC.[object_class_id]
+				  AND 
+				  OK.[object_key_column_name] NOT IN (N'instance_id', 'database_id')
+		) AS custom_object_keys ([object_class_property_name], [object_class_property_type])
 
 		UNION ALL
 
@@ -236,9 +258,25 @@ BEGIN
 		--	as defined above
 		SELECT 
 			OC.[object_class_id]
-		-- number each property arbitrarily separately for each object class
-		-- start the numbering at 2 so that property_id = 1 is always parent_object_id
-		,	4 + ROW_NUMBER() OVER 
+		-- The expression below is the expression from the previous result set
+		-- with the number of object key rows added, where this number is obtained
+		-- from [config].[object_class_object_key] but otherwise in the same manner as for metadata key
+		,	2 + 
+			(
+				SELECT COUNT(*) 
+				FROM [config].[object_class_metadata_key] AS MK
+				WHERE MK.[object_class_id] = OC.[object_class_id]
+					  AND 
+					  MK.[metadata_key_column_name] NOT IN (N'instance_id', 'database_id')
+			) +
+			(
+				SELECT COUNT(*)
+				FROM [config].[object_class_object_key] AS OK
+				WHERE OK.[object_class_id] = OC.[object_class_id]
+					  AND 
+					  OK.[object_key_column_name] NOT IN (N'instance_id', 'database_id')
+			) + 
+			ROW_NUMBER() OVER 
 			(
 				PARTITION BY OC.[object_class_id]
 				ORDER BY (SELECT NULL)
@@ -250,7 +288,8 @@ BEGIN
 		,	VC.[view_column_is_nullable]
 		--	By default, disable all columns except parent_object_id and name
 		,	0
-		,	0 -- not a key by default
+		,	0 -- not a metadata key
+		,	0 -- not a object key
 		FROM 
 			[config].[object_class] 
 			AS OC
@@ -266,8 +305,29 @@ BEGIN
 				ON V.[schema_id] = VC.[view_schema_id]
 				   AND 
 				   V.[object_id] = VC.[view_object_id]
-		-- ignore any occurrences of the following
-		WHERE (VC.[view_column_name] NOT IN ('server_id', 'database_id', 'object_id', 'name'))
+		-- ignore any view columns which have the same name as the keys specified above
+		WHERE VC.[view_column_name] NOT IN 
+		(
+			SELECT [standard_metadata_key_name]
+			FROM 
+			(
+				VALUES 
+				('instance_id')
+			,	('database_id')
+			) AS standard_metadata_keys([standard_metadata_key_name])
+
+			UNION ALL 
+
+			SELECT [metadata_key_column_name] AS [custom_metadata_key_name]
+			FROM [config].[object_class_metadata_key] AS MK
+			WHERE MK.[object_class_id] = OC.[object_class_id]
+
+			UNION ALL
+
+			SELECT [object_key_column_name] AS [custom_object_key_name] 
+			FROM [config].[object_class_object_key] AS OK
+			WHERE OK.[object_class_id] = OC.[object_class_id]
+		)
 		;
 
 		INSERT INTO 
