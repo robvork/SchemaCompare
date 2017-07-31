@@ -18,7 +18,6 @@ BEGIN
 		,	[object_class_id] INT NULL
 		,	[subobject_class_name] NVARCHAR(128) NOT NULL
 		,	[subobject_class_id] NVARCHAR(128) NULL
-		,	[name_query] NVARCHAR(MAX) NOT NULL
 		);
 
 		SET @ls_sql = 
@@ -30,12 +29,10 @@ BEGIN
 			(
 				[object_class_name] 
 			,	[subobject_class_name]
-			,	[name_query]
 			)
 			SELECT 
 				[object_class_name]
 			,	[subobject_class_name]
-			,	[name_query]
 			FROM 
 			 ', @as_input_table_name, N'
 			;
@@ -100,21 +97,10 @@ BEGIN
 		(
 			[object_class_id]
 		,	[subobject_class_id]
-		,	[mapping_table_schema]
-		,	[mapping_table_name]
-		,	[name_query]
 		)
 		SELECT 
 			[object_class_id]
 		,	[subobject_class_id] 
-		,	'object'
-		,	CONCAT
-			(
-			  object_class_name
-			, N'_to_'
-			, subobject_class_name
-			)
-		,	[name_query]
 		FROM 
 			#object_to_subobject
 		;

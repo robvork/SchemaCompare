@@ -24,7 +24,7 @@ BEGIN
 
 		CREATE TABLE #object_class_property
 		(
-			object_class_id INT NOT NULL
+			object_class_id INT NOT NULL PRIMARY KEY
 		,	object_class_property_id INT NOT NULL
 		,	object_class_property_name NVARCHAR(128) NOT NULL
 		,	object_class_property_type_name SYSNAME NOT NULL
@@ -32,7 +32,8 @@ BEGIN
 		,	object_class_property_has_length BIT NOT NULL
 		,	object_class_property_length INT NULL
 		,	object_class_property_is_enabled BIT NOT NULL 
-		,	object_class_property_is_key BIT NOT NULL
+		,	object_class_property_is_metadata_key BIT NOT NULL
+		,	object_class_property_is_object_key BIT NOT NULL
 		);
 
 		CREATE TABLE #view_column
@@ -142,7 +143,8 @@ BEGIN
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
 		,	[object_class_property_is_enabled]
-		,	[object_class_property_is_key]
+		,	[object_class_property_is_metadata_key]
+		,	[object_class_property_is_object_key]
 		)
 		-- Primary key of each object class table
 		-- server_id, database_id, object_id
@@ -155,7 +157,8 @@ BEGIN
 		,	NULL -- NULL length
 		,	0 -- is not nullable
 		,	1 -- enabled 
-		,   0 -- not a key
+		,   1 -- is a metadata key
+		,	0 -- is not an object key
 		FROM 
 			[config].[object_class] AS OC
 			CROSS JOIN 
@@ -167,8 +170,6 @@ BEGIN
 					VALUES 
 					('instance_id'		 , 1)
 				,	('database_id'		 , 2)
-				,	('object_id'		 , 3)
-				,	('source_object_id'  , 4)
 				) AS id_props ([object_class_property_name], [object_class_property_id])
 			)  AS id_props ([object_class_property_name], [object_class_property_id])
 
@@ -180,7 +181,7 @@ BEGIN
 			-- within schemacompare
 		SELECT 
 			OC.[object_class_id]
-		,	5 -- assign the next available object_property_id 
+		,	3 -- assign the next available object_property_id 
 		,	'name'
 		,	'SYSNAME'
 		,	0 -- doesn't have length

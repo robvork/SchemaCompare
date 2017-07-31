@@ -1327,9 +1327,7 @@ function Install-SchemaCompare
     # Initialize the table that contains the classes of objects being considered in the comparisons (e.g. tables, procedures, table columns, procedure parameters)
     Write-Verbose "Initializing object class table..."
     Initialize-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\object_class.xml"
-    Write-Verbose "...object class table initialized."
-
-    return 
+    Write-Verbose "...object class table initialized." 
 
     # Initialize the table that links object classes to subobject classes (e.g. tables to columns, procedures to parameters)
     Write-Verbose "Initializing object class to subobject class table..."
@@ -1340,6 +1338,8 @@ function Install-SchemaCompare
     Write-Verbose "Initializing object class property table..."
     Initialize-SchemaCompareObjectClassProperty -ServerInstance $ServerInstance -Database $Database
     Write-Verbose "...object class property table initialized."
+
+    return
     
     # Generate the table create scripts for each object class and place them in $ModuleRoot\Database\Tables\object
     $ObjectScriptRoot = "$ModuleRoot\Database\Tables\object"

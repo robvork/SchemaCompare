@@ -153,8 +153,8 @@ BEGIN
 		,	[metadata_key_column_source] 
 		)
 		SELECT 
-			OC.[object_class_id] 
-		,	ROW_NUMBER() OVER (ORDER BY (SELECT NULL) PARTITION BY OC.[object_class_id])
+			OC.[row_id] 
+		,	ROW_NUMBER() OVER (PARTITION BY OC.[row_id] ORDER BY (SELECT NULL))
 		,	M.[metadata_key_column_name] 
 		,	M.[metadata_key_column_type] 
 		,	M.[metadata_key_column_source] 
@@ -181,8 +181,8 @@ BEGIN
 		,	[object_key_column_source]
 		)
 		SELECT 
-			OC.[object_class_id] 
-		,	ROW_NUMBER() OVER (ORDER BY (SELECT NULL) PARTITION BY OC.[object_class_id])
+			OC.[row_id] 
+		,	ROW_NUMBER() OVER (PARTITION BY OC.[row_id] ORDER BY (SELECT NULL))
 		,	O.[object_key_column_name] 
 		,	O.[object_key_column_type] 
 		,	O.[object_key_column_source] 
