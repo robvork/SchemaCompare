@@ -146,13 +146,12 @@ BEGIN
 		,	[object_class_property_is_metadata_key]
 		,	[object_class_property_is_object_key]
 		)
-		-- Primary key of each object class table
-		-- server_id, database_id, object_id
+		-- All object classes have standard metadata keys [instance_id] and [database_id]
 		SELECT 
 			OC.[object_class_id]
-		,	id_props.[object_class_property_id]
-		,	id_props.[object_class_property_name]
-		,	'INT'
+		,	standard_metadata_keys.[object_class_property_id]
+		,	standard_metadata_keys.[object_class_property_name]
+		,	standard_metadata_keys.[object_class_property_type]
 		,	0 -- doesn't have length
 		,	NULL -- NULL length
 		,	0 -- is not nullable
@@ -165,35 +164,76 @@ BEGIN
 			(
 				SELECT [object_class_property_name] 
 				,	   [object_class_property_id]
+				,	   [object_class_property_type] 
 				FROM 
 				(
 					VALUES 
-					('instance_id'		 , 1)
-				,	('database_id'		 , 2)
-				) AS id_props ([object_class_property_name], [object_class_property_id])
-			)  AS id_props ([object_class_property_name], [object_class_property_id])
+					('instance_id', 1, N'INT')
+				,	('database_id', 2, N'INT')
+				) AS standard_metadata_keys ([object_class_property_name], [object_class_property_id], [object_class_property_type])
+			)  AS standard_metadata_keys ([object_class_property_name], [object_class_property_id], [object_class_property_type])
+
+		UNION ALL
+		-- All object classes have a set of 1 or more custom metadata keys
+		SELECT 
+			OC.[object_class_id]
+		,	2 + ROW_NUMBER() OVER (
+									PARTITION BY OC.[object_class_id]
+									ORDER BY (SELECT NULL)
+								  ) 
+		,	custom_metadata_keys.[object_class_property_name]
+		,	custom_metadata_keys.[object_class_property_type]
+		,	0 -- doesn't have length
+		,	NULL -- NULL length
+		,	0 -- is not nullable
+		,	1 -- enabled 
+		,   1 -- is a metadata key
+		,	0 -- is not an object key
+		FROM [config].[object_class] AS OC 
+			CROSS APPLY 
+			(
+				SELECT 
+					MK.[metadata_key_column_name]
+				,	MK.[metadata_key_column_type]
+				FROM 
+					[config].[object_class_metadata_key] AS MK
+				WHERE 
+					MK.[object_class_id] = OC.[object_class_id]
+			) AS custom_metadata_keys([object_class_property_name], [object_class_property_type])
+
+		UNION ALL 
+		-- All object classes have a set of 1 or more custom object keys
+		SELECT 
+			OC.[object_class_id]
+		/* The property id for the object keys start at 
+			(# of standard metadata keys)
+						+
+			(# of custom metadata keys)
+					    + 
+			 1
+
+			The number of standard keys is the 2 for each object class, so we have the expression
+			2 + (# of custom metadata keys). The subquery below counts the number of such keys. 
+			Finally, with the first two terms of the expression, we number beginning at 1 and increase
+			for as many custom object keys as are present for each object class. ROW_NUMBER()
+			accomplishes this numbering exactly.
+		*/
+		,	2 + 
+			(
+				SELECT COUNT(*) 
+				FROM [config].[object_class_metadata_key] AS MK
+				WHERE MK.[object_class_id] = OC.[object_class_id]
+			) + 
+			ROW_NUMBER() OVER (PARTITION BY OC.[object_class_id] 
+							   ORDER BY (SELECT NULL) 
+							  )
+		FROM [config].[object_class] AS OC
 
 		UNION ALL
 
-		-- all objects have a textual property 'name' for which (server_id, database_id, name) 
-			-- an alterate key for the table. This name is to be preferred in comparisons 
-			-- because it is the key data that comes from the original db, unlike the IDs which are generated
-			-- within schemacompare
-		SELECT 
-			OC.[object_class_id]
-		,	3 -- assign the next available object_property_id 
-		,	'name'
-		,	'SYSNAME'
-		,	0 -- doesn't have length
-		,	NULL -- undefined length
-		,	0 -- is not nullable since it is part of a candidate key
-		,	1 -- enabled
-		,	1 -- name is the default key within an instance/database/object class combination
-		FROM 
-			[config].[object_class] AS OC
-
-		UNION ALL 
-
+		-- The remaining properties are non-key columns which come from all the columns of the object class's
+		--	source catalog view, excluding any columns which have the same names as metadata or object keys 
+		--	as defined above
 		SELECT 
 			OC.[object_class_id]
 		-- number each property arbitrarily separately for each object class
@@ -241,7 +281,8 @@ BEGIN
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
 		,	[object_class_property_is_enabled]
-		,	[object_class_property_is_key]
+		,	[object_class_property_is_metadata_key]
+		,	[object_class_property_is_object_key]
 		)
 		SELECT 
 			[object_class_id]
@@ -252,7 +293,8 @@ BEGIN
 		,	[object_class_property_length]
 		,	[object_class_property_is_nullable]
 		,	[object_class_property_is_enabled]
-		,	[object_class_property_is_key]
+		,	[object_class_property_is_metadata_key]
+		,	[object_class_property_is_object_key]
 		FROM
 			#object_class_property
 		;
