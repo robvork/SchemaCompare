@@ -1389,3 +1389,29 @@ WHERE [object_class_id] =
 	FROM [config].[object_class] 
 	WHERE [object_class_name] = N'table'
 );
+
+SELECT 1 AS instance_id ,1 AS database_id ,M.[object_id] AS object_id ,M.[parameter_id] AS parameter_id ,M.[name] AS parameter_name ,P.[name] AS procedure_name ,M.[column_encryption_key_database_name] AS [column_encryption_key_database_name] ,M.[column_encryption_key_id] AS [column_encryption_key_id] ,M.[default_value] AS [default_value] ,M.[encryption_algorithm_name] AS [encryption_algorithm_name] ,M.[encryption_type] AS [encryption_type] ,M.[encryption_type_desc] AS [encryption_type_desc] ,M.[has_default_value] AS [has_default_value] ,M.[is_cursor_ref] AS [is_cursor_ref] ,M.[is_nullable] AS [is_nullable] ,M.[is_output] AS [is_output] ,M.[is_readonly] AS [is_readonly] ,M.[is_xml_document] AS [is_xml_document] ,M.[max_length] AS [max_length] ,M.[name] AS [name] ,M.[precision] AS [precision] ,M.[scale] AS [scale] ,M.[system_type_id] AS [system_type_id] ,M.[user_type_id] AS [user_type_id] ,M.[xml_collection_id] AS [xml_collection_id] FROM WideWorldImporters.sys.parameters AS M              INNER JOIN WideWorldImporters.sys.procedures AS P                  ON M.[object_id] = P.[object_id]
+
+SELECT * FROM [object].[table]
+SELECT * FROM [config].[object_class_property]
+SELECT * FROM [object].[database]
+
+SELECT * FROM sys.databases WHERE [name] = 'SchemaCompare'
+
+SELECT * FROM [config].[instance]
+SELECT * FROM [config].[database]
+SELECT * FROM [object].[database]
+SELECT * FROM [object].[schema]
+SELECT * FROM [object].[table]
+SELECT * FROM [object].[table_column]
+SELECT * FROM [object].[function]
+SELECT * FROM [object].[function_param]
+
+SELECT *
+FROM WideWorldImporters.sys.parameters AS P 
+             INNER JOIN WideWorldImporters.sys.objects AS F 
+                ON P.[object_id] = F.[object_id] 
+                   AND  
+                   F.[type] IN (N'FN', N'FT', N'IF')
+
+--DROP TABLE sample_db.dbo.T3; 

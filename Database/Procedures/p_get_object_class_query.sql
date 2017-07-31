@@ -164,6 +164,9 @@ BEGIN TRY
 		,	@as_select_list = @ls_select_list OUTPUT 
 		;
 
+		IF @ai_debug_level > 0
+			PRINT CONCAT(N'Object class ', @li_object_class_id, N' select list:', @ls_newline, @ls_select_list);
+
 		SET @ls_select_list = REPLACE(@ls_select_list, N'{instance_id}', @li_instance_id);
 		SET @ls_select_list = REPLACE(@ls_select_list, N'{database_id}', @li_database_id);
 		SET @ls_select_list = REPLACE(@ls_select_list, N'{alias}', @ls_object_class_source_alias);
@@ -175,8 +178,16 @@ BEGIN TRY
 		CONCAT 
 		(
 			@ls_select_list, @ls_newline 
-		,	N'FROM ', @ls_object_class_source
+		,	N' FROM ', @ls_object_class_source
 		);
+
+		IF @ai_debug_level > 0
+		BEGIN
+			PRINT CONCAT 
+			(
+				N'Object class ', @li_object_class_id, N' query:', @ls_object_class_query 
+			);
+		END;
 
 		UPDATE #object_class_scope 
 		SET [object_class_query] = @ls_object_class_query
@@ -229,12 +240,12 @@ END CATCH
 END;
 GO
 
-EXEC [config].[p_get_object_class_query]
-	@as_object_class_name = NULL
-,	@as_instance_name = N'ASPIRING\SQL16'
-,	@as_database_name = N'WideWorldImporters'
-,	@ai_debug_level = 2
-;
+--EXEC [config].[p_get_object_class_query]
+--	@as_object_class_name = NULL
+--,	@as_instance_name = N'ASPIRING\SQL16'
+--,	@as_database_name = N'WideWorldImporters'
+--,	@ai_debug_level = 1
+--;
 
 
 --EXEC [config].[p_get_object_class_query] 

@@ -1189,6 +1189,7 @@ function Get-SchemaCompareObjectClassQuery
         [String] $ServerInstance 
     ,   [String] $Database
     ,   [String] $ObjectClassName
+    ,   [String] $SourceInstance
     ,   [String] $SourceDatabase
     )
 
@@ -1203,6 +1204,7 @@ function Get-SchemaCompareObjectClassQuery
 
     $Query = "EXECUTE [config].[p_get_object_class_query]
                 @as_object_class_name = $ObjectClassName
+              , @as_instance_name = '$SourceInstance'
               , @as_database_name = '$SourceDatabase'
                 "
 

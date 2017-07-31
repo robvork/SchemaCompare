@@ -156,7 +156,8 @@ BEGIN TRY
 	CREATE TABLE #object_class_property
 	(
 		property_name SYSNAME NOT NULL PRIMARY KEY
-	,	is_key BIT NOT NULL
+	,	is_metadata_key BIT NOT NULL
+	,	is_object_key BIT NOT NULL
 	);
 
 	END; 
@@ -336,17 +337,19 @@ BEGIN TRY
 	INSERT INTO #object_class_property
 	(
 		property_name 
-	,	is_key
+	,	is_metadata_key
+	,	is_object_key 
 	)
 	SELECT 
 		[object_class_property_name]
-	,	[object_class_property_is_key]
+	,	[object_class_property_is_metadata_key]
+	,	[object_class_property_is_object_key]
 	FROM 
 		[config].[object_class_property]
 	WHERE 
 		[object_class_id] = @ai_object_class_id
 		AND
-		[object_class_property_name] NOT IN ('database_id', 'instance_id', 'object_id')
+		[object_class_property_name] NOT IN ('database_id', 'instance_id')
 		AND
 		[object_class_property_is_enabled] = 1
 	;
@@ -359,7 +362,7 @@ BEGIN TRY
 
 	-- Validate that [config].[object_class_property defines at least one key column for the chosen object class
 	BEGIN
-	IF NOT EXISTS(SELECT * FROM #object_class_property WHERE [is_key] = 1)
+	IF NOT EXISTS(SELECT * FROM #object_class_property WHERE [is_metadata_key] = 1)
 	BEGIN
 		SET @ls_error_msg = CONCAT(N'[config].[object_class_property] does not define a key for the chosen object class.'
 									  ,N'At least one key column must be specified.');
@@ -410,13 +413,13 @@ BEGIN TRY
 	BEGIN
 		-- SQL of form SRC.key1 = TGT.key1, SRC.key2 = TGT.key2, ... , SRC.keyn = TGT.keyn 
 		-- for keys key1, key2, ... , keyn in #object_class_property
-		-- i.e. property_name values for which is_key = 1
+		-- i.e. property_name values for which is_metadata_key = 1
 
 	DECLARE key_column_cursor CURSOR LOCAL SCROLL
 	FOR 
 	SELECT [property_name] 
 	FROM #object_class_property
-	WHERE [is_key] = 1
+	WHERE [is_metadata_key] = 1
 	;
 
 	OPEN key_column_cursor;
@@ -433,7 +436,8 @@ BEGIN TRY
 		SET @ls_sql_merge_matching_condition +=
 		CONCAT 
 		(
-			@ls_newline, N'AND SRC.', @ls_key_column, N' COLLATE DATABASE_DEFAULT = TGT.', @ls_key_column, N' COLLATE DATABASE_DEFAULT'
+			@ls_newline, N'AND SRC.', @ls_key_column, N'= TGT.', @ls_key_column
+			--@ls_newline, N'AND SRC.', @ls_key_column, N' COLLATE DATABASE_DEFAULT = TGT.', @ls_key_column, N' COLLATE DATABASE_DEFAULT'
 		); 
 
 		FETCH NEXT FROM key_column_cursor
@@ -458,13 +462,13 @@ BEGIN TRY
 	/****************  Generate WHEN MATCHED THEN UPDATE code ****************/
 	-- SQL of the form TGT.val1 = SRC.val1, TGT.val2 = SRC.val2, ... , TGT.valm = SRC.valm 
 	-- for vals val1, val2, ... , valm in #object_class_property
-	-- i.e. property name values for which is_key = 0
+	-- i.e. property name values for which is_metadata_key = 0
 	BEGIN 
 	DECLARE val_column_cursor CURSOR LOCAL SCROLL
 	FOR 
 	SELECT [property_name] 
 	FROM #object_class_property
-	WHERE [is_key] = 0
+	WHERE [is_metadata_key] = 0
 	;
 
 	OPEN val_column_cursor;
@@ -514,7 +518,7 @@ BEGIN TRY
 		-- Note: since we validated that there is at least one column, the source and target headers here will each be nonempty
 	-- Target header
 		-- (key1, key2, ... , keyn, val1, val2, ... , valm) 
-			-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively
+			-- for keyi and valj in #object_class_property with is_metadata_key = 1 and 0 respectively
 	BEGIN
 	BEGIN 
 	SET @ls_sql_merge_insert_target_header = CAST(N'' AS NVARCHAR(MAX));
@@ -575,7 +579,7 @@ BEGIN TRY
 
 	-- Source header
 	-- SRC.key1, SRC.key2, ... , SRC.keyn, SRC.val1, SRC.val2, ... , SRC.valm 
-		-- for keyi and valj in #object_class_property with is_key = 1 and 0 respectively
+		-- for keyi and valj in #object_class_property with is_metadata_key = 1 and 0 respectively
 	BEGIN
 
 	-- move cursor back to the first key column

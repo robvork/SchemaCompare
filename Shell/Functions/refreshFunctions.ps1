@@ -69,7 +69,7 @@ function Sync-SchemaCompareObjectClass
         #>
 
         # Get object class query
-        $ObjectClassQuery = Get-SchemaCompareObjectClassQuery -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName -SourceDatabase $SourceDatabase
+        $ObjectClassQuery = Get-SchemaCompareObjectClassQuery -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName -SourceInstance $SourceServerInstance -SourceDatabase $SourceDatabase
     
         $ObjectClassQuery | 
         ForEach-Object {
@@ -78,8 +78,7 @@ function Sync-SchemaCompareObjectClass
             $CurrentValuesTableName = "#${ObjectClassName}_current_values"
             Write-Verbose "Syncing $ObjectClassName";
             $Query = "WITH current_values AS ($Query) 
-                      
-                      SELECT *, current_values
+                      SELECT *
                       INTO $CurrentValuesTableName
                       FROM current_values;
 
@@ -88,6 +87,7 @@ function Sync-SchemaCompareObjectClass
                       ,     @as_database_name = '$SourceDatabase'
                       ,     @as_object_class_name = '$ObjectClassName'
                       ,     @as_input_table_name = '$CurrentValuesTableName'
+                      ;
             "
 
             Write-Verbose "Executing the following query:`n${Query}"

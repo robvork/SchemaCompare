@@ -257,7 +257,7 @@ GO
 --DECLARE @ls_select_list NVARCHAR(MAX);
 
 --EXEC [config].[p_get_object_class_select_list]
---	@as_object_class_name = N'view_column'
+--	--@as_object_class_name = N'view_column'
 --,	@as_select_list = @ls_select_list OUTPUT
 --,	@ai_debug_level = 0
 --;
