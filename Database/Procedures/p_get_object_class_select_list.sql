@@ -4,7 +4,7 @@ GO
 CREATE PROCEDURE [config].[p_get_object_class_select_list]
 (
 	@as_object_class_name [config].[NAME] = NULL
-,	@ai_object_class_id [config].[NAME] = NULL
+,	@ai_object_class_id [config].[ID] = NULL
 ,	@as_select_list NVARCHAR(MAX) OUTPUT
 ,	@ai_debug_level INT = 0
 )

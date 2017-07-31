@@ -1387,5 +1387,5 @@ WHERE [object_class_id] =
 (
 	SELECT [object_class_id] 
 	FROM [config].[object_class] 
-	WHERE [object_class_name
+	WHERE [object_class_name] = N'table'
 );
