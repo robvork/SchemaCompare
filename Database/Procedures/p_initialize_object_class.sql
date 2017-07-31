@@ -46,7 +46,6 @@ BEGIN
 	,	object_class_name NVARCHAR(128) NOT NULL
 	,	object_class_source NVARCHAR(MAX) NOT NULL
 	,	object_class_source_alias NVARCHAR(10) NOT NULL
-	,	object_class_source_object_id_column SYSNAME NOT NULL
 	,	view_schema_name SYSNAME NOT NULL
 	,	view_name SYSNAME NOT NULL
 	);
@@ -55,13 +54,12 @@ BEGIN
 
 	CREATE TABLE #metadata_keys
 	(
-		[object_class_id] [config].[ID] NOT NULL
+		[object_class_id] INT NOT NULL
 	,	[metadata_key_column_id]   INT
 	,	[metadata_key_column_name] SYSNAME
 	,	[metadata_key_column_type] SYSNAME
 	,	[metadata_key_column_source] SYSNAME
-	,	CONSTRAINT pk_config_object_class
-		PRIMARY KEY
+	,	PRIMARY KEY
 		(
 			[object_class_id]
 		,	[metadata_key_column_id]
@@ -72,13 +70,12 @@ BEGIN
 	
 	CREATE TABLE #object_keys
 	(
-		[object_class_id] [config].[ID] NOT NULL
+		[object_class_id] INT NOT NULL
 	,	[object_key_column_id]   INT
 	,	[object_key_column_name] SYSNAME
 	,	[object_key_column_type] SYSNAME
 	,	[object_key_column_source] SYSNAME
-	,	CONSTRAINT pk_config_object_class
-		PRIMARY KEY
+	,	PRIMARY KEY
 		(
 			[object_class_id]
 		,	[object_key_column_id]
@@ -86,7 +83,7 @@ BEGIN
 	);
 
 	/*******************************************************************************
-	Extract data from input tables into procedure temp tables
+	Extract data from object class input table into local table, prepare for id assignment
 	*******************************************************************************/
 
 	SET @ls_sql = CONCAT 
@@ -98,7 +95,6 @@ BEGIN
 		,	object_class_name 
 		,	object_class_source
 		,	object_class_source_alias 
-		,	object_class_source_object_id_column
 		,	view_schema_name
 		,	view_name
 		)
@@ -107,62 +103,9 @@ BEGIN
 		,	I.[object_class_name] 
 		,	I.[object_class_source]
 		,	I.[object_class_source_alias]
-		,	I.[object_class_source_object_id_column]
 		,	I.[view_schema_name]
 		,	I.[view_name] 
 		FROM ', @as_input_table_name, N' AS I
-		;'
-	);
-	
-	IF @ai_debug_level > 0
-		PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
-	
-	EXEC(@ls_sql);
-
-	SET @ls_sql = CONCAT 
-	(
-		N'
-		INSERT INTO #metadata_keys 
-		(
-			[object_class_id] 
-		,	[metadata_key_column_id]  
-		,	[metadata_key_column_name] 
-		,	[metadata_key_column_type] 
-		,	[metadata_key_column_source] 
-		)
-		SELECT 
-			M.[object_class_id] 
-		,	ROW_NUMBER() OVER (ORDER BY (SELECT NULL) PARTITION BY M.[object_class_id])
-		,	M.[metadata_key_column_name] 
-		,	M.[metadata_key_column_type] 
-		,	M.[metadata_key_column_source] 
-		FROM ', @as_metadata_keys_table_name, N' AS M
-		;'
-	);
-	
-	IF @ai_debug_level > 0
-		PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
-	
-	EXEC(@ls_sql);
-
-	SET @ls_sql = CONCAT 
-	(
-		N'
-		INSERT INTO #object_keys
-		(
-			[object_class_id] 
-		,	[object_key_column_id]   
-		,	[object_key_column_name] 
-		,	[object_key_column_type] 
-		,	[object_key_column_source]
-		)
-		SELECT 
-			O.[object_class_id] 
-		,	ROW_NUMBER() OVER (ORDER BY (SELECT NULL) PARTITION BY O.[object_class_id])
-		,	O.[object_key_column_name] 
-		,	O.[object_key_column_type] 
-		,	O.[object_key_column_source] 
-		FROM ', @as_object_keys_table_name, N' AS O
 		;'
 	);
 	
@@ -194,6 +137,67 @@ BEGIN
 	END;
 
 	/*******************************************************************************
+	With the newly assigned object_class_ids, join the metadata and object key 
+	input tables with #object_class to get the object class ids and key data
+	*******************************************************************************/
+
+	SET @ls_sql = CONCAT 
+	(
+		N'
+		INSERT INTO #metadata_keys 
+		(
+			[object_class_id] 
+		,	[metadata_key_column_id]  
+		,	[metadata_key_column_name] 
+		,	[metadata_key_column_type] 
+		,	[metadata_key_column_source] 
+		)
+		SELECT 
+			OC.[object_class_id] 
+		,	ROW_NUMBER() OVER (ORDER BY (SELECT NULL) PARTITION BY OC.[object_class_id])
+		,	M.[metadata_key_column_name] 
+		,	M.[metadata_key_column_type] 
+		,	M.[metadata_key_column_source] 
+		FROM ', @as_metadata_keys_table_name, N' AS M
+			INNER JOIN #object_class AS OC
+				ON M.[object_class_name] = OC.[object_class_name]
+		;'
+	);
+	
+	IF @ai_debug_level > 0
+		PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
+	
+	EXEC(@ls_sql);
+
+	SET @ls_sql = CONCAT 
+	(
+		N'
+		INSERT INTO #object_keys
+		(
+			[object_class_id] 
+		,	[object_key_column_id]   
+		,	[object_key_column_name] 
+		,	[object_key_column_type] 
+		,	[object_key_column_source]
+		)
+		SELECT 
+			OC.[object_class_id] 
+		,	ROW_NUMBER() OVER (ORDER BY (SELECT NULL) PARTITION BY OC.[object_class_id])
+		,	O.[object_key_column_name] 
+		,	O.[object_key_column_type] 
+		,	O.[object_key_column_source] 
+		FROM ', @as_object_keys_table_name, N' AS O
+			INNER JOIN #object_class AS OC
+				ON O.[object_class_name] = OC.[object_class_name]
+		;'
+	);
+	
+	IF @ai_debug_level > 0
+		PRINT CONCAT(N'Executing the following in DSQL: ', @ls_sql);
+	
+	EXEC(@ls_sql);
+
+	/*******************************************************************************
 	Create new rows in [config].[object_class] using #object_class
 	*******************************************************************************/
 	INSERT INTO 
@@ -203,7 +207,6 @@ BEGIN
 	,	[object_class_name]
 	,	[object_class_source]
 	,	[object_class_source_alias]
-	,	[object_class_source_object_id_column]
 	,	[table_schema_name]
 	,	[table_name]
 	,	[view_schema_name] 
@@ -214,7 +217,6 @@ BEGIN
 	,	[object_class_name]
 	,	[object_class_source]
 	,	[object_class_source_alias]
-	,	[object_class_source_object_id_column]
 	,	N'object'
 	,	[object_class_name]
 	,	[view_schema_name]
@@ -229,4 +231,55 @@ BEGIN
 		SELECT * FROM [config].[object_class];
 	END;
 
+	/*******************************************************************************
+	Create new rows in [config].[object_class_metadata_key] using #metadata_keys
+	*******************************************************************************/
+	INSERT INTO [config].[object_class_metadata_key]
+	(
+		[object_class_id] 
+	,	[metadata_key_column_id] 
+	,	[metadata_key_column_name]
+	,	[metadata_key_column_type]
+	,	[metadata_key_column_source]
+	)
+	SELECT 
+		[object_class_id] 
+	,	[metadata_key_column_id] 
+	,	[metadata_key_column_name]
+	,	[metadata_key_column_type]
+	,	[metadata_key_column_source]
+	FROM #metadata_keys
+	;
+
+	IF @ai_debug_level > 1
+	BEGIN
+		SELECT '[config].[object_class_metadata_key] at the END of procedure';
+		SELECT * FROM [config].[object_class_metadata_key];
+	END;
+
+	/*******************************************************************************
+	Create new rows in [config].[object_class_metadata_key] using #object_keys
+	*******************************************************************************/
+	INSERT INTO [config].[object_class_object_key]
+	(
+		[object_class_id] 
+	,	[object_key_column_id] 
+	,	[object_key_column_name]
+	,	[object_key_column_type]
+	,	[object_key_column_source]
+	)
+	SELECT 
+		[object_class_id] 
+	,	[object_key_column_id] 
+	,	[object_key_column_name]
+	,	[object_key_column_type]
+	,	[object_key_column_source]
+	FROM #object_keys
+	;
+
+	IF @ai_debug_level > 1
+	BEGIN
+		SELECT '[config].[object_class_object_key] at the END of procedure';
+		SELECT * FROM [config].[object_class_object_key];
+	END;
 END; 

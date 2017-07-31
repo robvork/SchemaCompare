@@ -8,7 +8,7 @@ CREATE TABLE [config].[object_class_metadata_key]
 ,	[metadata_key_column_name] SYSNAME
 ,	[metadata_key_column_type] SYSNAME
 ,	[metadata_key_column_source] SYSNAME
-,	CONSTRAINT pk_config_object_class
+,	CONSTRAINT pk_config_object_class_metadata_key
 	PRIMARY KEY
 	(
 		[object_class_id]

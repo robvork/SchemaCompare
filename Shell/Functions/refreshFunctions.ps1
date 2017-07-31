@@ -79,7 +79,7 @@ function Sync-SchemaCompareObjectClass
             Write-Verbose "Syncing $ObjectClassName";
             $Query = "WITH current_values AS ($Query) 
                       
-                      SELECT * 
+                      SELECT *, current_values
                       INTO $CurrentValuesTableName
                       FROM current_values;
 

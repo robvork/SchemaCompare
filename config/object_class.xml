@@ -19,7 +19,7 @@
             <object_key>
                 <name> database_name </name>
                 <type> SYSNAME </type>
-                <column> {alias}.[name]
+                <column> {alias}.[name] </column>
             </object_key>
         </object_keys>
         
@@ -47,7 +47,7 @@
             <object_key>
                 <name> schema_name </name>
                 <type> SYSNAME </type>
-                <column> {alias}.[name]
+                <column> {alias}.[name] </column>
             </object_key>
         </object_keys>
         
@@ -167,7 +167,7 @@
             <object_key>
                 <name> view_name </name>
                 <type> SYSNAME </type>
-                </column> {alias}.[name] </column>
+                <column> {alias}.[name] </column>
             </object_key>
         </object_keys>
         

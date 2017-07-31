@@ -1329,6 +1329,8 @@ function Install-SchemaCompare
     Initialize-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\object_class.xml"
     Write-Verbose "...object class table initialized."
 
+    return 
+
     # Initialize the table that links object classes to subobject classes (e.g. tables to columns, procedures to parameters)
     Write-Verbose "Initializing object class to subobject class table..."
     Initialize-SchemaCompareObjectClassToSubobjectClass -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\class_mapping.xml"
