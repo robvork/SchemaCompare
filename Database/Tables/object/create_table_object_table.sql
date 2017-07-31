@@ -4,8 +4,10 @@ CREATE TABLE [object].[table]
 (
   [instance_id] INT NOT NULL
 , [database_id] INT NOT NULL
-, [object_id] INT IDENTITY(1, 1) NOT NULL
-, [name] SYSNAME NOT NULL
+, [object_id] INT NOT NULL
+, [schema_id] INT NOT NULL
+, [schema_name] SYSNAME NOT NULL
+, [table_name] SYSNAME NOT NULL
 , [create_date] DATETIME NULL
 , [durability] TINYINT NULL
 , [durability_desc] NVARCHAR(60) NULL
@@ -31,13 +33,20 @@ CREATE TABLE [object].[table]
 , [lock_on_bulk_load] BIT NULL
 , [max_column_id_used] INT NULL
 , [modify_date] DATETIME NULL
+, [name] SYSNAME NULL
 , [parent_object_id] INT NULL
 , [principal_id] INT NULL
-, [schema_id] INT NULL
 , [temporal_type] TINYINT NULL
 , [temporal_type_desc] NVARCHAR(60) NULL
 , [text_in_row_limit] INT NULL
 , [type] CHAR(2) NULL
 , [type_desc] NVARCHAR(60) NULL
 , [uses_ansi_nulls] BIT NULL
+, CONSTRAINT pk_object_table PRIMARY KEY
+(
+  instance_id
+, database_id
+, object_id
+, schema_id
+)
 );

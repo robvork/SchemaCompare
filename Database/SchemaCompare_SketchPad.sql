@@ -1300,3 +1300,80 @@ SELECT * FROM sys.databases
 
 SELECT * FROM sys.schemas
 SELECT * FROM sys.views
+
+SELECT * FROM [config].[object_class]
+
+SELECT OC.[object_class_name], MK.* 
+FROM [config].[object_class_metadata_key] AS MK
+	INNER JOIN [config].[object_class] AS OC 
+		ON MK.object_class_id = OC.[object_class_id]
+
+SELECT OC.[object_class_name], OK.* FROM [config].[object_class_object_key] AS OK
+	INNER JOIN [config].[object_class] AS OC 
+		ON OK.object_class_id = OC.[object_class_id]
+	
+SELECT 
+	   O2SO.[object_class_id]
+,	   OC1.[object_class_name]
+,	   O2SO.[subobject_class_id]
+,	   OC2.[object_class_name] 
+FROM [config].[object_to_subobject] AS O2SO
+	INNER JOIN [config].[object_class] AS OC1
+		ON O2SO.[object_class_id] = OC1.[object_class_id]
+	INNER JOIN [config].[object_class] AS OC2
+		ON O2SO.[subobject_class_id] = OC2.[object_class_id]
+
+SELECT * 
+FROM [config].[object_to_subobject]
+
+SELECT *
+FROM [config].[object_class_object_key] 
+
+SELECT OC.[object_class_id],
+	   OC.[object_class_name],
+		2 + (
+		SELECT COUNT(*) 
+		FROM [config].[object_class_metadata_key] AS MK 
+		WHERE MK.[object_class_id] = OC.[object_class_id]
+		) + 1
+FROM [config].[object_class] AS OC
+
+SELECT * 
+FROM [config].[object_class_property] 
+ORDER BY [object_class_id], [object_class_property_id] 
+
+-- metadata keys
+SELECT OC.[object_class_name] 
+,	   OCP.[object_class_property_id]
+,	   OCP.[object_class_property_name] 
+,	   OCP.[object_class_property_type_name] 
+FROM [config].[object_class_property] AS OCP
+	INNER JOIN [config].[object_class] AS OC
+		ON OCP.[object_class_id] = OC.[object_class_id]
+WHERE [object_class_property_is_metadata_key] = 1 
+ORDER BY OCP.[object_class_id], OCP.[object_class_property_id]
+
+-- object keys
+SELECT OC.[object_class_name] 
+,	   OCP.[object_class_property_id]
+,	   OCP.[object_class_property_name] 
+,	   OCP.[object_class_property_type_name] 
+FROM [config].[object_class_property] AS OCP
+	INNER JOIN [config].[object_class] AS OC
+		ON OCP.[object_class_id] = OC.[object_class_id]
+WHERE [object_class_property_is_object_key] = 1 
+ORDER BY OCP.[object_class_id], OCP.[object_class_property_id]
+
+-- non keys
+SELECT 
+	   OC.[object_class_name] 
+,	   OCP.[object_class_property_id]
+,	   OCP.[object_class_property_name] 
+,	   OCP.[object_class_property_type_name] 
+FROM [config].[object_class_property] AS OCP
+	INNER JOIN [config].[object_class] AS OC
+		ON OCP.[object_class_id] = OC.[object_class_id]
+WHERE [object_class_property_is_metadata_key] = 0
+	  AND 
+	  [object_class_property_is_object_key] = 0	
+ORDER BY OCP.[object_class_id], OCP.[object_class_property_id]

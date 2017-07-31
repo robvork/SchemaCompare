@@ -46,15 +46,14 @@ function Get-SchemaCompareObjectClassTableSQL
         Database=$Database; 
     }
 
-
     $ColumnSQL = Get-SchemaCompareObjectClassColumnSQL @ConnectionParams -Name $Name
 
     # add 2 spaces before the first row so that the column names are aligned after we combine the columns into one string
     $ColumnSQL[0] = "  " + $ColumnSQL[0]
     $ColumnSQL = $ColumnSQL -join "`n, "
 
-    # add an identity property to object_id so it doesn't have to be set manually
-    $ColumnSQL = ($ColumnSQL -replace "\[object_id\] INT", "[object_id] INT IDENTITY(1, 1)")
+    $MetadataKeyNames = Get-SchemaCompareObjectClassMetadataKey -ServerInstance $ServerInstance -Database $Database -ObjectClassName $Name | 
+                    Select-Object -ExpandProperty metadata_key_column_name
 
     # Put all objects into an [object] schema table bearing the object class name
     $TableSQL = @(
@@ -62,7 +61,14 @@ function Get-SchemaCompareObjectClassTableSQL
                     ""
                     "CREATE TABLE [object].[$Name]" 
                     "(" 
-                        $ColumnSQL 
+                        $ColumnSQL
+                        ", CONSTRAINT pk_object_${Name} PRIMARY KEY"
+                        "("
+                            @((" " * 2) + "instance_id"
+                              "database_id"
+                              ($MetadataKeyNames | Where-Object {$_ -notin @("instance_id", "database_id")})
+                             ) -join "`n, "
+                        ")" 
                     ");"
                  ) -join "`n"
 
@@ -86,44 +92,4 @@ function New-SchemaCompareObjectClassTableScript
     $ScriptName = "create_table_object_${Name}.sql"
     $TableCreateSQL = Get-SchemaCompareObjectClassTableSQL -ServerInstance $ServerInstance -Database $Database -Name $Name 
     New-Item -Path $Path -Name $ScriptName -Value $TableCreateSQL | Out-Null 
-}
-
-function New-SchemaCompareObjectToSubobjectMappingTableScript
-{
-    [CmdletBinding()]
-    param
-    (
-        [string] $ServerInstance 
-    ,   
-        [string] $Database
-    ,
-        [string] $ObjectClassName
-    ,   
-        [string] $SubobjectClassName
-    ,   
-        [string] $Path
-    )
-
-    $ClassMapping = Get-SchemaCompareObjectClassToSubobjectClass -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName -SubobjectClassName $SubobjectClassName
-    $MappingTableSchema = ($ClassMapping.mapping_table_schema -replace "\[|\]", "")
-    $MappingTableName = ($ClassMapping.mapping_table_name -replace "\[|\]", "")
-
-    $TableSQL = "
-    DROP TABLE IF EXISTS [$MappingTableSchema].[$MappingTableName]; 
-    GO 
-
-    CREATE TABLE [$MappingTableSchema].[$MappingTableName]
-    (
-        [object_id] INT NOT NULL
-    ,   [subobject_id] INT NOT NULL
-    ,   CONSTRAINT pk_${MappingTableName} PRIMARY KEY
-        (
-            [object_id]
-        ,   [subobject_id]
-        )  
-    );
-    GO
-    "
-
-    New-Item -Path $Path -Name "create_table_${MappingTableSchema}_${MappingTableName}.sql" -Value $TableSQL -ItemType File | Out-Null
 }

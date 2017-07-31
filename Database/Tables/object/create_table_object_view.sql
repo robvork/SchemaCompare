@@ -4,8 +4,10 @@ CREATE TABLE [object].[view]
 (
   [instance_id] INT NOT NULL
 , [database_id] INT NOT NULL
-, [object_id] INT IDENTITY(1, 1) NOT NULL
-, [name] SYSNAME NOT NULL
+, [object_id] INT NOT NULL
+, [schema_id] INT NOT NULL
+, [schema_name] SYSNAME NOT NULL
+, [view_name] SYSNAME NOT NULL
 , [create_date] DATETIME NULL
 , [has_opaque_metadata] BIT NULL
 , [has_replication_filter] BIT NULL
@@ -17,10 +19,17 @@ CREATE TABLE [object].[view]
 , [is_schema_published] BIT NULL
 , [is_tracked_by_cdc] BIT NULL
 , [modify_date] DATETIME NULL
+, [name] SYSNAME NULL
 , [parent_object_id] INT NULL
 , [principal_id] INT NULL
-, [schema_id] INT NULL
 , [type] CHAR(2) NULL
 , [type_desc] NVARCHAR(60) NULL
 , [with_check_option] BIT NULL
+, CONSTRAINT pk_object_view PRIMARY KEY
+(
+  instance_id
+, database_id
+, object_id
+, schema_id
+)
 );

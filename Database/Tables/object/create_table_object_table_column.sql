@@ -4,12 +4,13 @@ CREATE TABLE [object].[table_column]
 (
   [instance_id] INT NOT NULL
 , [database_id] INT NOT NULL
-, [object_id] INT IDENTITY(1, 1) NOT NULL
-, [name] SYSNAME NOT NULL
+, [column_id] INT NOT NULL
+, [object_id] INT NOT NULL
+, [column_name] SYSNAME NOT NULL
+, [table_name] SYSNAME NOT NULL
 , [collation_name] SYSNAME NULL
 , [column_encryption_key_database_name] SYSNAME NULL
 , [column_encryption_key_id] INT NULL
-, [column_id] INT NULL
 , [default_object_id] INT NULL
 , [encryption_algorithm_name] SYSNAME NULL
 , [encryption_type] INT NULL
@@ -32,10 +33,18 @@ CREATE TABLE [object].[table_column]
 , [is_sparse] BIT NULL
 , [is_xml_document] BIT NULL
 , [max_length] SMALLINT NULL
+, [name] SYSNAME NULL
 , [precision] TINYINT NULL
 , [rule_object_id] INT NULL
 , [scale] TINYINT NULL
 , [system_type_id] TINYINT NULL
 , [user_type_id] INT NULL
 , [xml_collection_id] INT NULL
+, CONSTRAINT pk_object_table_column PRIMARY KEY
+(
+  instance_id
+, database_id
+, column_id
+, object_id
+)
 );

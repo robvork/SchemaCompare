@@ -4,8 +4,7 @@ CREATE TABLE [object].[database]
 (
   [instance_id] INT NOT NULL
 , [database_id] INT NOT NULL
-, [object_id] INT IDENTITY(1, 1) NOT NULL
-, [name] SYSNAME NOT NULL
+, [database_name] SYSNAME NOT NULL
 , [collation_name] SYSNAME NULL
 , [compatibility_level] TINYINT NULL
 , [containment] TINYINT NULL
@@ -64,6 +63,7 @@ CREATE TABLE [object].[database]
 , [is_trustworthy_on] BIT NULL
 , [log_reuse_wait] TINYINT NULL
 , [log_reuse_wait_desc] NVARCHAR(60) NULL
+, [name] SYSNAME NULL
 , [owner_sid] VARBINARY NULL
 , [page_verify_option] TINYINT NULL
 , [page_verify_option_desc] NVARCHAR(60) NULL
@@ -81,4 +81,10 @@ CREATE TABLE [object].[database]
 , [two_digit_year_cutoff] SMALLINT NULL
 , [user_access] TINYINT NULL
 , [user_access_desc] NVARCHAR(60) NULL
+, CONSTRAINT pk_object_database PRIMARY KEY
+(
+  instance_id
+, database_id
+, database_id
+)
 );
