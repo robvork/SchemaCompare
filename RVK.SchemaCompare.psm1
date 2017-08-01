@@ -255,7 +255,7 @@ function Compare-Schema
     )
 }
 
-function Compare-Object
+function Compare-SCObject
 {
     <#
         .SYNOPSIS
