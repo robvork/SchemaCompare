@@ -1,0 +1,5 @@
+DROP SCHEMA IF EXISTS [diff]; 
+GO
+
+CREATE SCHEMA [diff];
+GO

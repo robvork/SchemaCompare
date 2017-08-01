@@ -105,6 +105,46 @@ function Get-SchemaCompareObjectClassTableSQL
     Write-Output $TableSQL
 }
 
+function Get-SchemaCompareDiffTableSQL 
+{
+    [CmdletBinding()]
+    param 
+    (
+        [Parameter(Mandatory=$True)]
+        [String] $ServerInstance 
+    ,
+        [Parameter(Mandatory=$True)]
+        [String] $Database 
+    ,
+        [ValidateNotNullOrEmpty()]
+        [String] $Name 
+    )
+
+     $ConnectionParams = @{
+        ServerInstance=$ServerInstance;
+        Database=$Database; 
+    }
+
+    $ColumnSQL = Get-SchemaCompareDiffColumnSQL @ConnectionParams -Name $Name
+
+    # add 2 spaces before the first row so that the column names are aligned after we combine the columns into one string
+    $ColumnSQL[0] = "  " + $ColumnSQL[0]
+    $ColumnSQL = $ColumnSQL -join "`n, "
+
+    # Put all objects into an [object] schema table bearing the object class name
+    $TableSQL = @(
+                    "DROP TABLE IF EXISTS [diff].[$Name];"
+                    ""
+                    "CREATE TABLE [diff].[$Name]" 
+                    "(" 
+                        $ColumnSQL
+                    ");"
+                 ) -join "`n"
+
+    Write-Output $TableSQL
+}
+
+
 function New-SchemaCompareObjectClassTableScript
 {
     [CmdletBinding()]
@@ -121,5 +161,24 @@ function New-SchemaCompareObjectClassTableScript
 
     $ScriptName = "create_table_object_${Name}.sql"
     $TableCreateSQL = Get-SchemaCompareObjectClassTableSQL -ServerInstance $ServerInstance -Database $Database -Name $Name 
+    New-Item -Path $Path -Name $ScriptName -Value $TableCreateSQL | Out-Null 
+}
+
+function New-SchemaCompareDiffTableScript 
+{
+    [CmdletBinding()]
+    param 
+    (
+        [string] $ServerInstance
+    ,   
+        [string] $Database 
+    ,
+        [string] $Name
+    ,
+        [string] $Path 
+    )
+
+    $ScriptName = "create_table_diff_${Name}.sql"
+    $TableCreateSQL = Get-SchemaCompareDiffTableSQL -ServerInstance $ServerInstance -Database $Database -Name $Name 
     New-Item -Path $Path -Name $ScriptName -Value $TableCreateSQL | Out-Null 
 }

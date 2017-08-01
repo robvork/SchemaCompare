@@ -1423,6 +1423,26 @@ function Install-SchemaCompare
     }
     Write-Verbose "...object class table create scripts generated"
 
+    $DiffScriptRoot = "$ModuleRoot\Database\Tables\diff"
+    if(-not (Test-Path $DiffScriptRoot))
+    {
+        New-Item -Path $DiffScriptRoot -ItemType Directory | Out-Null 
+    }
+    else 
+    {
+        Get-ChildItem -Path $DiffScriptRoot -Filter create_table_*.sql | Remove-Item 
+    }
+
+    Write-Verbose "Generating diff table create scripts for each object class..."
+    foreach($ObjectClass in $ObjectClasses)
+    {
+        $ObjectClassName = $ObjectClass | Select-Object -ExpandProperty object_class_name
+        Write-Verbose "Creating diff table script for object class '$ObjectClassName'..."
+        New-SchemaCompareDiffTableScript -ServerInstance $ServerInstance -Database $Database -Name $ObjectClassName -Path $DiffScriptRoot
+        Write-Verbose "...'$ObjectClassName' diff table created."
+    }
+    Write-Verbose "...diff table create scripts generated"
+
     # Run all the freshly generated scripts to create a table per object class
     $ObjectClassScriptPaths = (
                             Get-ChildItem -Path $ObjectScriptRoot -Filter *.sql | 
@@ -1435,4 +1455,17 @@ function Install-SchemaCompare
         Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName "Table" -Path $ObjectClassScriptPath
     }
     Write-Verbose "...[object] schema tables created."
+
+    # Run all the freshly generated diff table scripts 
+    $DiffTablePaths = (
+                            Get-ChildItem -Path $DiffScriptRoot -Filter *.sql | 
+                            Select-Object -ExpandProperty FullName
+                      )
+
+    Write-Verbose "Executing all object class SQL scripts to create [diff] schema tables..."
+    foreach($DiffTablePath in $DiffTablePaths)
+    {
+        Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName "Table" -Path $DiffTablePath
+    }
+    Write-Verbose "...[diff] schema tables created."
 }
