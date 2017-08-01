@@ -1,0 +1,11 @@
+<standardMetadataKeys>
+    <standardMetadataKey>
+        <name> instance_id </name>
+        <type> INT </type>
+    </standardMetadataKey>
+
+    <standardMetadataKey>
+        <name> database_id </name>
+        <type> INT </type>
+    </standardMetadataKey>
+</standardMetadataKeys>

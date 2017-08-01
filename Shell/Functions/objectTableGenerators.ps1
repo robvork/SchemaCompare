@@ -26,6 +26,34 @@ function Get-SchemaCompareObjectClassColumnSQL
     Select-Object -ExpandProperty column_sql
 }
 
+function Get-SchemaCompareDiffColumnSQL 
+{
+    [CmdletBinding()]
+    param 
+    (
+        [Parameter(Mandatory=$True)]
+        [String] $ServerInstance 
+    ,
+        [Parameter(Mandatory=$True)]
+        [String] $Database 
+    ,
+        [ValidateNotNullOrEmpty()]
+        [String] $Name 
+    )
+
+     $ConnectionParams = @{
+        ServerInstance=$ServerInstance;
+        Database=$Database; 
+    }
+
+    $Query = "EXECUTE [config].[p_create_diff_column_code]
+                      @as_object_class_name = '$Name'
+             "
+
+    Invoke-Sqlcmd2 @ConnectionParams -Query $Query |
+    Select-Object -ExpandProperty column_sql
+}
+
 function Get-SchemaCompareObjectClassTableSQL 
 {
     [CmdletBinding()]

@@ -1402,7 +1402,7 @@ SELECT * FROM [config].[instance]
 SELECT * FROM [config].[database]
 SELECT * FROM [object].[database]
 SELECT * FROM [object].[schema]
-SELECT * FROM [object].[table]
+SELECT * FROM [object].[table] 
 SELECT * FROM [object].[table_column]
 SELECT * FROM [object].[function]
 SELECT * FROM [object].[function_param]
@@ -1415,3 +1415,5 @@ FROM WideWorldImporters.sys.parameters AS P
                    F.[type] IN (N'FN', N'FT', N'IF')
 
 --DROP TABLE sample_db.dbo.T3; 
+
+SELECT * FROM [config].[object_class_metadata_key]

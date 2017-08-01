@@ -327,3 +327,43 @@ function Initialize-SchemaCompareObjectClassProperty
     $Query = "EXECUTE [config].[p_initialize_object_class_property]"
     Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
+
+function Initialize-SchemaCompareStandardMetadataKey
+{
+    [CmdletBinding()]
+    param
+    (
+        [String] $ServerInstance
+    ,   [String] $Database
+    ,   [String] $ConfigFilePath
+    )
+
+    $StandardMetadataKeys = ([xml] (Get-Content $ConfigFilePath -Raw)).StandardMetadataKeys.StandardMetadataKey
+    $StandardMetadataKeyInputTableName = "#standard_metadata_key_input"
+    $Query = "
+        CREATE TABLE $StandardMetadataKeyInputTableName
+        (
+            [standard_metadata_key_name] SYSNAME NOT NULL PRIMARY KEY
+        ,   [standard_metadata_key_type] SYSNAME NOT NULL
+        );
+
+        INSERT INTO $StandardMetadataKeyInputTableName
+        (
+            [standard_metadata_key_name]
+        ,   [standard_metadata_key_type]
+        )
+        VALUES 
+        $($($StandardMetadataKeys | 
+          ForEach-Object {"('$($_.name.Trim())', '$($_.type.Trim())')"} 
+         ) -join "`n,")
+        ;
+
+        EXECUTE [config].[p_initialize_standard_metadata_key]
+            @as_input_table_name = '$StandardMetadataKeyInputTableName'
+        ;
+    "
+
+    Write-Verbose "Executing `n $Query"
+
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query
+}

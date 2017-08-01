@@ -212,6 +212,8 @@ BEGIN
 	,	[object_class_source_alias]
 	,	[table_schema_name]
 	,	[table_name]
+	,	[diff_table_schema_name]
+	,	[diff_table_name]
 	,	[view_schema_name] 
 	,	[view_name]
 	)
@@ -221,6 +223,8 @@ BEGIN
 	,	[object_class_source]
 	,	[object_class_source_alias]
 	,	N'object'
+	,	[object_class_name]
+	,	N'diff'
 	,	[object_class_name]
 	,	[view_schema_name]
 	,	[view_name]
