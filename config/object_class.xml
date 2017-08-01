@@ -61,17 +61,10 @@
 
         <source> 
             {db}.sys.tables AS {alias}
-            INNER JOIN {db}.sys.schemas AS S
-                ON {alias}.[schema_id] = S.[schema_id]
         </source>
         <source_alias> T </source_alias>
 
         <metadata_keys>
-            <metadata_key>
-                <name> schema_id </name>
-                <type> INT </type>
-                <column> {alias}.[schema_id] </column>
-            </metadata_key>
             <metadata_key>
                 <name> object_id </name>
                 <type> INT </type>
@@ -80,11 +73,6 @@
         </metadata_keys>
         
         <object_keys>
-            <object_key>
-                <name> schema_name </name>
-                <type> SYSNAME </type>
-                <column> S.[name] </column>
-            </object_key>
             <object_key>
                 <name> table_name </name>
                 <type> SYSNAME </type>
@@ -101,17 +89,10 @@
 
         <source> 
             {db}.sys.columns AS {alias} 
-            INNER JOIN {db}.sys.tables AS T 
-                ON {alias}.[object_id] = T.[object_id]
         </source>
         <source_alias> C </source_alias>
 
         <metadata_keys>
-            <metadata_key>
-                <name> object_id </name>
-                <type> INT </type>
-                <column> {alias}.[object_id] </column>
-            </metadata_key>
             <metadata_key>
                 <name> column_id </name>
                 <type> INT </type>
@@ -120,11 +101,6 @@
         </metadata_keys>
         
         <object_keys>
-            <object_key>
-                <name> table_name </name>
-                <type> SYSNAME </type>
-                <column> T.[name] </column>
-            </object_key>
             <object_key>
                 <name> column_name </name>
                 <type> SYSNAME </type>
@@ -141,17 +117,10 @@
 
         <source> 
             {db}.sys.views AS {alias}
-            INNER JOIN {db}.sys.schemas AS S 
-                ON {alias}.[schema_id] = S.[schema_id]
         </source>
         <source_alias> V </source_alias>
 
         <metadata_keys>
-            <metadata_key>
-                <name> schema_id </name>
-                <type> INT </type>
-                <column> {alias}.[schema_id] </column>
-            </metadata_key>
             <metadata_key>
                 <name> object_id </name>
                 <type> INT </type>
@@ -160,11 +129,6 @@
         </metadata_keys>
         
         <object_keys>
-            <object_key>
-                <name> schema_name </name>
-                <type> SYSNAME </type>
-                <column> S.[name] </column>
-            </object_key>
             <object_key>
                 <name> view_name </name>
                 <type> SYSNAME </type>
@@ -181,17 +145,10 @@
 
         <source> 
             {db}.sys.columns AS {alias} 
-            INNER JOIN {db}.sys.views AS V 
-                ON {alias}.[object_id] = V.[object_id]
         </source>
         <source_alias> C </source_alias>
 
         <metadata_keys>
-            <metadata_key>
-                <name> object_id </name>
-                <type> INT </type>
-                <column> {alias}.[object_id] </column>
-            </metadata_key>
             <metadata_key>
                 <name> column_id </name>
                 <type> INT </type>
@@ -200,11 +157,6 @@
         </metadata_keys>
         
         <object_keys>
-            <object_key>
-                <name> view_name </name>
-                <type> SYSNAME </type>
-                <column> V.[name] </column>
-            </object_key>
             <object_key>
                 <name> column_name </name>
                 <type> SYSNAME </type>
@@ -221,17 +173,10 @@
 
         <source> 
             {db}.sys.procedures AS {alias}
-            INNER JOIN {db}.sys.schemas AS S 
-                ON {alias}.[schema_id] = S.[schema_id]
         </source>
         <source_alias> P </source_alias>
 
         <metadata_keys>
-            <metadata_key>
-                <name> schema_id </name>
-                <type> INT </type>
-                <column> {alias}.[schema_id] </column>
-            </metadata_key>
             <metadata_key>
                 <name> object_id </name>
                 <type> INT </type>
@@ -240,11 +185,6 @@
         </metadata_keys>
         
         <object_keys>
-            <object_key>
-                <name> schema_name </name>
-                <type> SYSNAME </type>
-                <column> S.[name] </column>
-            </object_key>
             <object_key>
                 <name> procedure_name </name>
                 <type> SYSNAME </type>
@@ -261,17 +201,10 @@
 
         <source> 
             {db}.sys.parameters AS {alias} 
-            INNER JOIN {db}.sys.procedures AS P 
-                ON {alias}.[object_id] = P.[object_id]
         </source>
         <source_alias> M </source_alias>
 
         <metadata_keys>
-            <metadata_key>
-                <name> object_id </name>
-                <type> INT </type>
-                <column> {alias}.[object_id] </column>
-            </metadata_key>
             <metadata_key>
                 <name> parameter_id </name>
                 <type> INT </type>
@@ -280,11 +213,6 @@
         </metadata_keys>
         
         <object_keys>
-            <object_key>
-                <name> procedure_name </name>
-                <type> SYSNAME </type>
-                <column> P.[name] </column>
-            </object_key>
             <object_key>
                 <name> parameter_name </name>
                 <type> SYSNAME </type>
@@ -301,18 +229,11 @@
 
         <source> 
             {db}.sys.objects AS {alias} 
-            INNER JOIN {db}.sys.schemas AS S 
-                ON {alias}.[schema_id] = S.[schema_id]
             WHERE [type] IN (N'FN', N'FT', N'IF')
         </source>
         <source_alias> F </source_alias>
 
         <metadata_keys>
-            <metadata_key>
-                <name> schema_id </name>
-                <type> INT </type>
-                <column> {alias}.[schema_id] </column>
-            </metadata_key>
             <metadata_key>
                 <name> object_id </name>
                 <type> INT </type>
@@ -321,11 +242,6 @@
         </metadata_keys>
         
         <object_keys>
-            <object_key>
-                <name> schema_name </name>
-                <type> SYSNAME </type>
-                <column> S.[name] </column>
-            </object_key>
             <object_key>
                 <name> function_name </name>
                 <type> SYSNAME </type>
@@ -351,11 +267,6 @@
 
         <metadata_keys>
             <metadata_key>
-                <name> object_id </name>
-                <type> INT </type>
-                <column> {alias}.[object_id] </column>
-            </metadata_key>
-            <metadata_key>
                 <name> parameter_id </name>
                 <type> INT </type>
                 <column> {alias}.[parameter_id] </column>
@@ -363,11 +274,6 @@
         </metadata_keys>
         
         <object_keys>
-            <object_key>
-                <name> function_name </name>
-                <type> SYSNAME </type>
-                <column> F.[name] </column>
-            </object_key>
             <object_key>
                 <name> parameter_name </name>
                 <type> SYSNAME </type>

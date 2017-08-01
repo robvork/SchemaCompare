@@ -7,7 +7,6 @@ CREATE TABLE [object].[function]
 , [object_id] INT NOT NULL
 , [schema_id] INT NOT NULL
 , [function_name] SYSNAME NOT NULL
-, [schema_name] SYSNAME NOT NULL
 , [create_date] DATETIME NULL
 , [is_ms_shipped] BIT NULL
 , [is_published] BIT NULL
@@ -22,7 +21,7 @@ CREATE TABLE [object].[function]
 (
   instance_id
 , database_id
-, object_id
 , schema_id
+, object_id
 )
 );

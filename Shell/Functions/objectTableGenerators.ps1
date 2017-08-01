@@ -52,8 +52,7 @@ function Get-SchemaCompareObjectClassTableSQL
     $ColumnSQL[0] = "  " + $ColumnSQL[0]
     $ColumnSQL = $ColumnSQL -join "`n, "
 
-    $MetadataKeyNames = Get-SchemaCompareObjectClassMetadataKey -ServerInstance $ServerInstance -Database $Database -ObjectClassName $Name | 
-                    Select-Object -ExpandProperty metadata_key_column_name
+    $MetadataKeys = Get-SchemaCompareObjectClassMetadataKey -ServerInstance $ServerInstance -Database $Database -ObjectClassName $Name 
 
     # Put all objects into an [object] schema table bearing the object class name
     $TableSQL = @(
@@ -66,7 +65,10 @@ function Get-SchemaCompareObjectClassTableSQL
                         "("
                             @((" " * 2) + "instance_id"
                               "database_id"
-                              ($MetadataKeyNames | Where-Object {$_ -notin @("instance_id", "database_id")})
+                              ($MetadataKeys | 
+                               Where-Object {$_.metadata_key_column_name -notin @("instance_id", "database_id")} | 
+                               Sort-Object is_parent_metadata_key -Descending | 
+                               Select-Object -ExpandProperty metadata_key_column_name)
                              ) -join "`n, "
                         ")" 
                     ");"

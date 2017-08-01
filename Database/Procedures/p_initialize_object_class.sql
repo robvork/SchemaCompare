@@ -59,6 +59,7 @@ BEGIN
 	,	[metadata_key_column_name] SYSNAME
 	,	[metadata_key_column_type] SYSNAME
 	,	[metadata_key_column_source] SYSNAME
+	,	[is_parent_metadata_key] BIT NOT NULL
 	,	PRIMARY KEY
 		(
 			[object_class_id]
@@ -151,6 +152,7 @@ BEGIN
 		,	[metadata_key_column_name] 
 		,	[metadata_key_column_type] 
 		,	[metadata_key_column_source] 
+		,	[is_parent_metadata_key]
 		)
 		SELECT 
 			OC.[row_id] 
@@ -158,6 +160,7 @@ BEGIN
 		,	M.[metadata_key_column_name] 
 		,	M.[metadata_key_column_type] 
 		,	M.[metadata_key_column_source] 
+		,	0
 		FROM ', @as_metadata_keys_table_name, N' AS M
 			INNER JOIN #object_class AS OC
 				ON M.[object_class_name] = OC.[object_class_name]
@@ -241,6 +244,7 @@ BEGIN
 	,	[metadata_key_column_name]
 	,	[metadata_key_column_type]
 	,	[metadata_key_column_source]
+	,	[is_parent_metadata_key]
 	)
 	SELECT 
 		[object_class_id] 
@@ -248,6 +252,7 @@ BEGIN
 	,	[metadata_key_column_name]
 	,	[metadata_key_column_type]
 	,	[metadata_key_column_source]
+	,	[is_parent_metadata_key]
 	FROM #metadata_keys
 	;
 

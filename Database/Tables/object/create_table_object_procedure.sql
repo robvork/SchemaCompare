@@ -7,7 +7,6 @@ CREATE TABLE [object].[procedure]
 , [object_id] INT NOT NULL
 , [schema_id] INT NOT NULL
 , [procedure_name] SYSNAME NOT NULL
-, [schema_name] SYSNAME NOT NULL
 , [create_date] DATETIME NULL
 , [is_auto_executed] BIT NULL
 , [is_execution_replicated] BIT NULL
@@ -26,7 +25,7 @@ CREATE TABLE [object].[procedure]
 (
   instance_id
 , database_id
-, object_id
 , schema_id
+, object_id
 )
 );

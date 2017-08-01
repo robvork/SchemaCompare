@@ -6,7 +6,6 @@ CREATE TABLE [object].[view]
 , [database_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [schema_id] INT NOT NULL
-, [schema_name] SYSNAME NOT NULL
 , [view_name] SYSNAME NOT NULL
 , [create_date] DATETIME NULL
 , [has_opaque_metadata] BIT NULL
@@ -29,7 +28,7 @@ CREATE TABLE [object].[view]
 (
   instance_id
 , database_id
-, object_id
 , schema_id
+, object_id
 )
 );

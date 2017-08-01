@@ -7,7 +7,6 @@ CREATE TABLE [object].[table_column]
 , [column_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [column_name] SYSNAME NOT NULL
-, [table_name] SYSNAME NOT NULL
 , [collation_name] SYSNAME NULL
 , [column_encryption_key_database_name] SYSNAME NULL
 , [column_encryption_key_id] INT NULL
@@ -44,7 +43,7 @@ CREATE TABLE [object].[table_column]
 (
   instance_id
 , database_id
-, column_id
 , object_id
+, column_id
 )
 );

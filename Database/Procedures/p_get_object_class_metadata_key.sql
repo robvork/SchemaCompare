@@ -63,6 +63,7 @@ BEGIN TRY
 		,	MK.[metadata_key_column_name] 
 		,	MK.[metadata_key_column_type]
 		,	MK.[metadata_key_column_source]
+		,	MK.[is_parent_metadata_key]
 		  FROM 
 			[config].[object_class_metadata_key] AS MK
 				INNER JOIN [config].[object_class] AS OC

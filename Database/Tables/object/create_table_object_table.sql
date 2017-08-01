@@ -6,7 +6,6 @@ CREATE TABLE [object].[table]
 , [database_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [schema_id] INT NOT NULL
-, [schema_name] SYSNAME NOT NULL
 , [table_name] SYSNAME NOT NULL
 , [create_date] DATETIME NULL
 , [durability] TINYINT NULL
@@ -46,7 +45,7 @@ CREATE TABLE [object].[table]
 (
   instance_id
 , database_id
-, object_id
 , schema_id
+, object_id
 )
 );

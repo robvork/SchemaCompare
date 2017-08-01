@@ -4,10 +4,9 @@ CREATE TABLE [object].[procedure_param]
 (
   [instance_id] INT NOT NULL
 , [database_id] INT NOT NULL
-, [object_id] INT NOT NULL
 , [parameter_id] INT NOT NULL
+, [object_id] INT NOT NULL
 , [parameter_name] SYSNAME NOT NULL
-, [procedure_name] SYSNAME NOT NULL
 , [column_encryption_key_database_name] SYSNAME NULL
 , [column_encryption_key_id] INT NULL
 , [default_value] SQL_VARIANT NULL

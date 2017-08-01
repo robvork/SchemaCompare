@@ -105,6 +105,55 @@ BEGIN
 			#object_to_subobject
 		;
 
+		-- Insert the parent metadata keys into their children
+		INSERT INTO
+			[config].[object_class_metadata_key] 
+		(
+			[object_class_id] 
+		,	[metadata_key_column_id] 
+		,	[metadata_key_column_name] 
+		,	[metadata_key_column_type]
+		,	[metadata_key_column_source]
+		,	[is_parent_metadata_key]
+		)
+		SELECT 
+			-- child object class id
+			O2SO.[subobject_class_id]
+		,	2 + (
+				SELECT COUNT(*) 
+				FROM [config].[object_class_metadata_key] AS MK2
+				WHERE MK2.[object_class_id] = O2SO.[subobject_class_id]
+			) + 
+			ROW_NUMBER () OVER (ORDER BY (SELECT NULL))
+		,	MK.[metadata_key_column_name]
+		,	MK.[metadata_key_column_type] 
+		/* this one requires a little explanation. we enforce that the parent and child
+		   object have in common the columns which form the metadata key of the parent class.
+		   we also use a generic replace token {alias} in the object class source.
+		   therefore, we can reuse the parent column source in the child column source without alteration.
+
+		   for example, the 'table column' source includes an [object_id] column
+		   which references the table the column belongs to. if the alias we use
+		   is C, then C.[object_id] is the column which is the metadata key to the parent object
+		   class source.
+
+		   within the parent object class 'table', we also have an [object_id] which forms the custom
+		   non-parent metadata key for table. If we use the alias T, then this column's source
+		   is T.[object_id].
+
+		   now, replacing C and T with the generic {alias} which we later substitute with the 
+		   data-driven object class source alias (see [config].[object_class]), we obtain
+		   {alias}.[object_id] in the first case, and {alias}.[object_id] in the second.
+		   these are the same expression, so we use the parent's column source verbatim
+		   in the child.
+		*/
+		,	MK.[metadata_key_column_source] 
+		,	1
+		FROM [config].[object_to_subobject] AS O2SO
+		INNER JOIN [config].[object_class_metadata_key] AS MK
+		-- join on parent object class id
+			ON O2SO.[object_class_id] = MK.[object_class_id]
+
 	END TRY
 	BEGIN CATCH
 		SET @ls_error_msg = ERROR_MESSAGE();
