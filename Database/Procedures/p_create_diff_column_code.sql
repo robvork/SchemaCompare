@@ -203,6 +203,6 @@ END CATCH
 END;
 GO
 
-EXEC [config].[p_create_diff_column_code]
-	@as_object_class_name = N'table'
-;
+--EXEC [config].[p_create_diff_column_code]
+--	@as_object_class_name = N'table'
+--;

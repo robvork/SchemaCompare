@@ -150,112 +150,7 @@ function Initialize-SchemaCompareDB
     }
 }
 
-function Compare-Database
-{
-    <#
-        .SYNOPSIS
-        Compare all objects between two databases
-
-        .DESCRIPTION
-        For a given pair of databases, possibly on different SQL Server instances,
-        compare the schema-level objects (tables, views, procedures, functions, types)
-        and then the subobjects of these objects, and their subobjects, until 
-        the objects no longer have any subobjects. 
-        
-        The comparison can be visualized as a tree where each node can have scalar values
-        and/or vector-valued children. 
-
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    )
-}
-
-function Compare-Schema
-{
-    <#
-        .SYNOPSIS
-        Compare all objects between two database schemas
-
-        .DESCRIPTION
-        Perform the comparison of Compare-Database, but only compare two specified schemas,
-        possibly with a different name between databases. See Compare-Database's help for details.
-
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison    
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    )
-}
-
-function Compare-SCObject
+function Compare-SchemaCompareObject
 {
     <#
         .SYNOPSIS
@@ -330,603 +225,7 @@ function Compare-SCObject
     )
 }
 
-function Compare-SubObject
-{
-    <#
-        .SYNOPSIS
-        Compare all objects of a given object class and subobject class between two database schemas
-
-        .DESCRIPTION
-        Perform the comparison of Compare-Schema except restrict the focus to only the 
-        specified object class and subclass. Since Compare-Schema is logically performing Compare-Database
-        but with a restricted schema, Compare-Object can be understood as performing Compare-Database
-        but with a restricted schema, object class, and subobject class. 
-
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [ValidateSet('Table'
-                    , 'View'
-                    , 'Type'
-                    , 'Procedure'
-                    , 'Function'
-                    )
-        ]
-        [String] $ObjectClass
-    ,
-        [String] $SubObjectClass
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ObjectNameLeft
-    ,
-        [String] $SubObjectNameLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    ,
-        [String] $ObjectNameRight
-    ,
-        [String] $SubObjectNameRight
-    )
-}
-
-function Compare-Table
-{
-    <#
-        .SYNOPSIS
-        Convenience function for Compare-Object with -ObjectClass "Table"
-
-        .DESCRIPTION
-        Calls Compare-Object -ObjectClass "Table" @Params, where @Params contains
-        the values of the remaining parameters passed into this function. 
-        See Compare-Object for details
-
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    )
-}
-
-function Compare-TableColumn
-{
-    <#
-        .SYNOPSIS
-        A convenience function for Compare-SubObject with -ObjectClass "Table" and -SubObjectClass "Column"
-
-        .DESCRIPTION
-        Calls Compare-SubObject -ObjectClass "Table" -SubObjectClass "Column" -ObjectNameLeft $TableLeft -SubObjectNameLeft $ColumnLeft -ObjectNameRight $TableRight -SubObjectNameRight $ColumnRight
-    
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $TableLeft
-    ,
-        [String] $ColumnLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    ,
-        [String] $TableRight
-    ,
-        [String] $ColumnRight
-    )
-}
-
-function Compare-View
-{
-    <#
-        .SYNOPSIS
-        Convenience function for Compare-Object with -ObjectClass "View"
-
-        .DESCRIPTION
-        Calls Compare-Object -ObjectClass "View" @Params, where @Params contains
-        the values of the remaining parameters passed into this function. 
-        See Compare-Object for details
-
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    )
-}
-
-function Compare-ViewColumn
-{
-    <#
-        .SYNOPSIS
-        A convenience function for Compare-SubObject with -ObjectClass "View" and -SubObjectClass "Column"
-
-        .DESCRIPTION
-        Calls Compare-SubObject -ObjectClass "View" -SubObjectClass "Column" -ObjectNameLeft $ViewLeft -SubObjectNameLeft $ColumnLeft -ObjectNameRight $ViewRight -SubObjectNameRight $ColumnRight
-    
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ViewLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    ,
-        [String] $ViewRight
-    )
-}
-
-function Compare-Procedure
-{
-    <#
-        .SYNOPSIS
-        Convenience function for Compare-Object with -ObjectClass "Procedure"
-
-        .DESCRIPTION
-        Calls Compare-Object -ObjectClass "Procedure" @Params, where @Params contains
-        the values of the remaining parameters passed into this function. 
-        See Compare-Object for details
-
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    )
-}
-
-function Compare-ProcedureParameter
-{
-    <#
-        .SYNOPSIS
-        A convenience function for Compare-SubObject with -ObjectClass "Procedure" and -SubObjectClass "Parameter"
-
-        .DESCRIPTION
-        Calls Compare-SubObject -ObjectClass "Procedure" -SubObjectClass "Parameter" -ObjectNameLeft $ProcedureLeft -SubObjectNameLeft $ParameterLeft -ObjectNameRight $ProcedureRight -SubObjectNameRight $ParameterRight
-    
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ProcedureLeft
-    ,
-        [String] $ParameterLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    ,
-        [String] $ProcedureRight
-    ,
-        [String] $ParameterRight
-    )
-}
-
-function Compare-Function
-{
-    <#
-        .SYNOPSIS
-        Convenience function for Compare-Object with -ObjectClass "Function"
-
-        .DESCRIPTION
-        Calls Compare-Object -ObjectClass "Function" @Params, where @Params contains
-        the values of the remaining parameters passed into this function. 
-        See Compare-Object for details
-
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    )
-}
-
-function Compare-FunctionParameter
-{
-    <#
-        .SYNOPSIS
-        A convenience function for Compare-SubObject with -ObjectClass "Function" and -SubObjectClass "Parameter"
-
-        .DESCRIPTION
-        Calls Compare-SubObject -ObjectClass "Function" -SubObjectClass "Parameter" -ObjectNameLeft $FunctionLeft -SubObjectNameLeft $ParameterLeft -ObjectNameRight $FunctionRight -SubObjectNameRight $ParameterRight
-    
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $FunctionLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    ,
-        [String] $FunctionRight
-    )
-}
-
-function Compare-Type
-{
-    <#
-        .SYNOPSIS
-        Convenience function for Compare-Object with -ObjectClass "Type"
-
-        .DESCRIPTION
-        Calls Compare-Object -ObjectClass "Type" @Params, where @Params contains
-        the values of the remaining parameters passed into this function. 
-        See Compare-Object for details
-
-        .PARAMETER ServerInstance
-        The SQL Server Instance hosting Database
-
-        .PARAMETER Database
-        The SQL Server database of SchemaCompare
-
-        .PARAMETER ServerInstanceLeft
-        The SQL Server Instance hosting DatabaseLeft
-
-        .PARAMETER DatabaseLeft
-        The SQL Server database used on the left side of the comparison
-        
-        .PARAMETER SchemaLeft
-        The schema within Database on the left side of the comparison 
-
-        .PARAMETER ServerInstanceRight
-        The SQL Server Instance hosting DatabaseRight
-
-        .PARAMETER DatabaseRight
-        The SQL Server database used on the right side of the comparison
-
-        .PARAMETER SchemaRight
-        The schema within Database on the right side of the comparison
-    #>
-    [CmdletBinding()]
-    param
-    (
-        [String] $ServerInstance
-    ,   
-        [String] $Database
-    ,
-        [String] $ServerInstanceLeft
-    ,
-        [String] $DatabaseLeft
-    ,
-        [String] $SchemaLeft
-    ,
-        [String] $ServerInstanceRight
-    ,
-        [String] $DatabaseRight
-    ,
-        [String] $SchemaRight
-    )
-}
-
-function Get-ObjectClassProperty
+function Get-SchemaCompareObjectClassProperty
 {
     <#
         .SYNOPSIS
@@ -964,7 +263,7 @@ function Get-ObjectClassProperty
     )
 }
 
-function Disable-ObjectClassProperty
+function Disable-SchemaCompareObjectClassProperty
 {
     <#
         .SYNOPSIS
@@ -996,7 +295,7 @@ function Disable-ObjectClassProperty
     )
 }
 
-function Enable-ObjectProperty
+function Enable-SchemaCompareObjectProperty
 {
     <#
         .SYNOPSIS
@@ -1028,7 +327,7 @@ function Enable-ObjectProperty
     )
 }
 
-function Register-SQLServerInstance
+function Register-SchemaCompareSQLServerInstance
 {
     <#
         .SYNOPSIS
@@ -1057,7 +356,7 @@ function Register-SQLServerInstance
     )
 }
 
-function Register-SQLServerDatabase
+function Register-SchemaCompareSQLServerDatabase
 {
     <#
         .SYNOPSIS
@@ -1273,6 +572,27 @@ function Get-SchemaCompareObjectClassObjectKey
 
 function Install-SchemaCompare
 {
+    <#
+    .SYNOPSIS
+    Installs and initializes SchemaCompare
+    
+    .DESCRIPTION
+    Generates and runs scripts to create and initialize the SchemaCompare data model from configuration files.
+    
+    .PARAMETER ServerInstance
+    The SQL Server Instance which will host SchemaCompare
+    
+    .PARAMETER Database
+    The name of the SchemaCompare database to be created
+    
+    .PARAMETER Force
+    Specifies the object drop/creation should occur even if there is an existing database with the specified name.
+    
+    .EXAMPLE
+    Install-SchemaCompare -ServerInstance "localhost\mySQLInstance16" -Database "SchemaCompare" 
+    This command installs SchemaCompare on SQL Server instance localhost\mySQLInstance16 on the database SchemaCompare.
+
+    #>
     [CmdletBinding()]
     param 
     (
@@ -1334,9 +654,9 @@ function Install-SchemaCompare
     $TablesMap         = @{ObjectTypeName="Table"      ;  RootPath="$ModuleRoot\Database\Tables\config"     ;} 
     $ProceduresMap     = @{ObjectTypeName="Procedure"  ;  RootPath="$ModuleRoot\Database\Procedures"        ;} 
     $FunctionsMap      = @{ObjectTypeName="Function"   ;  RootPath="$ModuleRoot\Database\Functions"         ;} 
-    $ForeignKeysMap    = @{ObjectTypeName="ForeignKey" ;  RootPath="$ModuleRoot\Database\Foreign_Keys"      ;} 
+    #$ForeignKeysMap    = @{ObjectTypeName="ForeignKey" ;  RootPath="$ModuleRoot\Database\Foreign_Keys"      ;} 
 
-    $RootMaps = @($SchemasMap, $DataTypesMap, $TablesMap, $ProceduresMap, $FunctionsMap, $ForeignKeysMap)
+    $RootMaps = @($SchemasMap, $DataTypesMap, $TablesMap, $ProceduresMap, $FunctionsMap)
     Write-Verbose "...script paths set"
 
     Write-Verbose "Validating script paths..."
@@ -1468,4 +788,20 @@ function Install-SchemaCompare
         Install-DatabaseObject -ServerInstance $ServerInstance -Database $Database -ObjectTypeName "Table" -Path $DiffTablePath
     }
     Write-Verbose "...[diff] schema tables created."
+
+    Write-Verbose "Generating object class comparison functions..."
+    $CompareFunctionsPath = "$ModuleRoot\Shell\Functions\compareFunctions.ps1"
+    if(Test-Path $CompareFunctionsPath)
+    {
+        Remove-Item $CompareFunctionsPath
+    }
+
+    New-Item -Path $CompareFunctionsPath -ItemType File | Out-Null
+    
+    $ObjectClasses | 
+        Select-Object -ExpandProperty object_class_name | 
+        Get-SchemaCompareObjectCompareWrapperFunction | 
+        Out-File $CompareFunctionsPath
+    
+    Write-Verbose "...object class comparison functions generated."
 }

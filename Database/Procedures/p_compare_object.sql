@@ -110,36 +110,36 @@ BEGIN TRY
 		)
 	);
 
-	INSERT INTO #diff_work_table
-	(
-		[instance_id]  
-	,	[database_id] 
-	,	[base_object_name]  
-	,	[hierarchy_path] 
-	,	[depth] 
-	,	[object_class_id] 
-	)
-	SELECT 
-		@li_instance_id_left
-	,	@li_database_id_left
-	,	<object_key_column_name>
-	,	N''
-	,	0
-	,	@li_object_class_id
-	FROM 
-		<object_schema>.<object_table>
-	WHERE 
-		<object_key_column_name> = @as_object_name_left
+	--INSERT INTO #diff_work_table
+	--(
+	--	[instance_id]  
+	--,	[database_id] 
+	--,	[base_object_name]  
+	--,	[hierarchy_path] 
+	--,	[depth] 
+	--,	[object_class_id] 
+	--)
+	--SELECT 
+	--	@li_instance_id_left
+	--,	@li_database_id_left
+	--,	<object_key_column_name>
+	--,	N''
+	--,	0
+	--,	@li_object_class_id
+	--FROM 
+	--	<object_schema>.<object_table>
+	--WHERE 
+	--	<object_key_column_name> = @as_object_name_left
 		
-	UNION ALL 
+	--UNION ALL 
 
-	SELECT 
-		@li_instance_id_right
-	,	@li_database_id_right
-	,	<object_key_column_name>
-	,	N''
-	,	0
-	,	@li_object_class_id
+	--SELECT 
+	--	@li_instance_id_right
+	--,	@li_database_id_right
+	--,	<object_key_column_name>
+	--,	N''
+	--,	0
+	--,	@li_object_class_id
 
 	
 	RETURN 0;
