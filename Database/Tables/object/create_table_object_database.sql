@@ -2,10 +2,10 @@ DROP TABLE IF EXISTS [object].[database];
 
 CREATE TABLE [object].[database]
 (
-  [instance_id] INT NOT NULL
+  [schemacompare_source_database_id] INT NOT NULL
+, [schemacompare_source_instance_id] INT NOT NULL
 , [database_id] INT NOT NULL
-, [source_database_id] INT NOT NULL
-, [source_database_name] SYSNAME NOT NULL
+, [database_name] SYSNAME NOT NULL
 , [collation_name] SYSNAME NULL
 , [compatibility_level] TINYINT NULL
 , [containment] TINYINT NULL
@@ -75,6 +75,7 @@ CREATE TABLE [object].[database]
 , [service_broker_guid] UNIQUEIDENTIFIER NULL
 , [snapshot_isolation_state] TINYINT NULL
 , [snapshot_isolation_state_desc] NVARCHAR(60) NULL
+, [source_database_id] INT NULL
 , [state] TINYINT NULL
 , [state_desc] NVARCHAR(60) NULL
 , [target_recovery_time_in_seconds] INT NULL
@@ -85,6 +86,5 @@ CREATE TABLE [object].[database]
 (
   instance_id
 , database_id
-, source_database_id
 )
 );

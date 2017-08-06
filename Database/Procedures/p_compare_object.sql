@@ -5,13 +5,16 @@ CREATE PROCEDURE [object].[p_compare_object]
 (
 	@as_instance_name_left SYSNAME
 ,	@as_database_name_left SYSNAME
-,	@as_object_name_left SYSNAME = NULL
+--  path beginning with database
+--  e.g. database/WideWorldImporters/schema/Sales
+,	@as_object_path_left NVARCHAR(MAX)
 
 ,	@as_instance_name_right SYSNAME
 ,	@as_database_name_right SYSNAME
-,	@as_object_name_right SYSNAME = NULL
+--  path beginning with database
+--  e.g. database/WideWorldImporters/schema/Purchasing
+,	@as_object_path_right NVARCHAR(MAX)
 
-,	@as_object_class_name SYSNAME = N'database'
 ,	@ab_recurse BIT = 0
 ,	@ai_depth INT = -1
 )

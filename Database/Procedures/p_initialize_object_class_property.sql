@@ -163,25 +163,33 @@ BEGIN
 			[config].[object_class] AS OC
 			CROSS JOIN 
 			(
-				SELECT [object_class_property_name] 
-				,	   [object_class_property_id]
-				,	   [object_class_property_type] 
+				SELECT [standard_metadata_key_name]
+				,	   [standard_metadata_key_id]
+				,	   [standard_metadata_key_type]
 				FROM 
-				(
-					VALUES 
-					('instance_id', 1, N'INT')
-				,	('database_id', 2, N'INT')
-				) AS standard_metadata_keys ([object_class_property_name], [object_class_property_id], [object_class_property_type])
+					   [config].[standard_metadata_key]
+				--FROM 
+				--(
+				--	VALUES 
+				--	('instance_id', 1, N'INT')
+				--,	('database_id', 2, N'INT')
+				--) AS standard_metadata_keys ([object_class_property_name], [object_class_property_id], [object_class_property_type])
 			)  AS standard_metadata_keys ([object_class_property_name], [object_class_property_id], [object_class_property_type])
 
 		UNION ALL
 		-- All object classes have a set of 1 or more custom metadata keys
 		SELECT 
 			OC.[object_class_id]
-		,	2 + ROW_NUMBER() OVER (
-									PARTITION BY OC.[object_class_id]
-									ORDER BY (SELECT NULL)
-								  ) 
+			,	(
+					SELECT COUNT(*) 
+					FROM [config].[standard_metadata_key] 
+				)
+					+ 
+				ROW_NUMBER() 
+					OVER (
+							PARTITION BY OC.[object_class_id]
+							ORDER BY (SELECT NULL)
+						 ) 
 		,	custom_metadata_keys.[object_class_property_name]
 		,	custom_metadata_keys.[object_class_property_type]
 		,	0 -- doesn't have length
@@ -201,7 +209,7 @@ BEGIN
 				WHERE 
 					MK.[object_class_id] = OC.[object_class_id]
 			) AS custom_metadata_keys([object_class_property_name], [object_class_property_type])
-		WHERE custom_metadata_keys.[object_class_property_name] NOT IN (N'instance_id', 'database_id')
+		--WHERE custom_metadata_keys.[object_class_property_name] NOT IN (N'instance_id', 'database_id')
 
 		UNION ALL 
 		-- All object classes have a set of 1 or more custom object keys
@@ -220,14 +228,19 @@ BEGIN
 			for as many custom object keys as are present for each object class. ROW_NUMBER()
 			accomplishes this numbering exactly.
 		*/
-		,	2 + 
+		,	(
+				SELECT COUNT(*) 
+				FROM [config].[standard_metadata_key] 
+			) 
+				+ 
 			(
 				SELECT COUNT(*) 
 				FROM [config].[object_class_metadata_key] AS MK
 				WHERE MK.[object_class_id] = OC.[object_class_id]
-					  AND 
-					  MK.[metadata_key_column_name] NOT IN (N'instance_id', 'database_id')
-			) + 
+					  --AND 
+					  --MK.[metadata_key_column_name] NOT IN (N'instance_id', 'database_id')
+			) 
+				+ 
 			ROW_NUMBER() OVER (PARTITION BY OC.[object_class_id] 
 							   ORDER BY (SELECT NULL) 
 							  )
@@ -261,21 +274,27 @@ BEGIN
 		-- The expression below is the expression from the previous result set
 		-- with the number of object key rows added, where this number is obtained
 		-- from [config].[object_class_object_key] but otherwise in the same manner as for metadata key
-		,	2 + 
+		,	(
+					SELECT COUNT(*) 
+					FROM [config].[standard_metadata_key] 
+			) 
+				+ 
 			(
 				SELECT COUNT(*) 
 				FROM [config].[object_class_metadata_key] AS MK
 				WHERE MK.[object_class_id] = OC.[object_class_id]
-					  AND 
-					  MK.[metadata_key_column_name] NOT IN (N'instance_id', 'database_id')
-			) +
+					  --AND 
+					  --MK.[metadata_key_column_name] NOT IN (N'instance_id', 'database_id')
+			) 
+				+
 			(
 				SELECT COUNT(*)
 				FROM [config].[object_class_object_key] AS OK
 				WHERE OK.[object_class_id] = OC.[object_class_id]
-					  AND 
-					  OK.[object_key_column_name] NOT IN (N'instance_id', 'database_id')
-			) + 
+					  --AND 
+					  --OK.[object_key_column_name] NOT IN (N'instance_id', 'database_id')
+			) 
+				+ 
 			ROW_NUMBER() OVER 
 			(
 				PARTITION BY OC.[object_class_id]
@@ -309,12 +328,12 @@ BEGIN
 		WHERE VC.[view_column_name] NOT IN 
 		(
 			SELECT [standard_metadata_key_name]
-			FROM 
-			(
-				VALUES 
-				('instance_id')
-			,	('database_id')
-			) AS standard_metadata_keys([standard_metadata_key_name])
+			FROM [config].[standard_metadata_key]
+			--(
+			--	VALUES 
+			--	('instance_id')
+			--,	('database_id')
+			--) AS standard_metadata_keys([standard_metadata_key_name])
 
 			UNION ALL 
 

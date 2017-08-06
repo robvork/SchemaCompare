@@ -340,22 +340,43 @@ function Initialize-SchemaCompareStandardMetadataKey
 
     $StandardMetadataKeys = ([xml] (Get-Content $ConfigFilePath -Raw)).StandardMetadataKeys.StandardMetadataKey
     $StandardMetadataKeyInputTableName = "#standard_metadata_key_input"
+    $StandardMetadataKeysRowSet = ($StandardMetadataKeys | 
+    Select-Object   @{n="standard_metadata_key_name"      ; e={"'" + $_.name.Trim() + "'"}}, 
+                    @{n="standard_metadata_key_type"      ; e={"'" + $_.type.Trim() + "'"}},
+                    @{n="standard_metadata_key_precedence"; e={"'" + $_.precedence.Trim() + "'"}} |
+                # Combine properties into one string separated by a comma, then a line break
+                ForEach-Object { @( 
+                                     $_.standard_metadata_key_name 
+                                     $_.standard_metadata_key_type 
+                                     $_.standard_metadata_key_precedence
+                                  ) -join ",`n"
+                                } | 
+                # Enclose each row with ( and )
+                ForEach-Object {
+                                @( 
+                                        "(" 
+                                        $_
+                                        ")"
+                                    ) -join "`n"
+                                }) -join ",`n" # combine all rows into one string, separating
+                                                # by a comma, then a line break
+
     $Query = "
         CREATE TABLE $StandardMetadataKeyInputTableName
         (
             [standard_metadata_key_name] SYSNAME NOT NULL PRIMARY KEY
         ,   [standard_metadata_key_type] SYSNAME NOT NULL
+        ,   [standard_metadata_key_precedence] INT NOT NULL
         );
 
         INSERT INTO $StandardMetadataKeyInputTableName
         (
             [standard_metadata_key_name]
         ,   [standard_metadata_key_type]
+        ,   [standard_metadata_key_precedence]
         )
         VALUES 
-        $($($StandardMetadataKeys | 
-          ForEach-Object {"('$($_.name.Trim())', '$($_.type.Trim())')"} 
-         ) -join "`n,")
+        $StandardMetadataKeysRowSet
         ;
 
         EXECUTE [config].[p_initialize_standard_metadata_key]
@@ -367,3 +388,4 @@ function Initialize-SchemaCompareStandardMetadataKey
 
     Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query
 }
+

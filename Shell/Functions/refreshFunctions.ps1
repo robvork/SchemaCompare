@@ -44,7 +44,7 @@ function Sync-SchemaCompareObjectClass
     try 
     {
         Set-StrictMode -Version Latest
-        
+        <#
         $ServerInstanceValid = Test-SQLServerInstance -ServerInstance $ServerInstance
 
         if(-not $ServerInstanceValid)
@@ -58,15 +58,15 @@ function Sync-SchemaCompareObjectClass
             throw "'$Database' is not a valid database on '$ServerInstance'"
         }
 
-        $ObjectClasses = Get-SchemaCompareObjectClass
-        $ObjectClassNameValid = [bool] ($ObjectClasses | Where-Object -FilterScript {$_.ObjectClassName -eq $ObjectClassName})
+        $ObjectClasses = Get-SchemaCompareObjectClass -ServerInstance $ServerInstance -Database $Database
+        $ObjectClassNameValid = [bool] ($ObjectClasses | Where-Object -FilterScript {$_.Object_Class_Name -eq $ObjectClassName})
         if(-not $ObjectClassNameValid)
         {
             throw "'$ObjectClassName' is not a valid SchemaCompare object class"
         }
 
-        $SourceServerInstances = Get-SchemaCompareSourceInstance -ServerInstance $ServerInstance -Database $Database 
-        $SourceDatabases = Get-SchemaCompareSourceDatabase -ServerInstance $ServerInstance -Database $Database 
+        $ServerInstances = Get-SchemaCompareSourceInstance -ServerInstance $ServerInstance -Database $Database 
+        $Databases = Get-SchemaCompareSourceDatabase -ServerInstance $ServerInstance -Database $Database 
 
         $SourceServerInstanceRegistered = [bool] ($SourceServerInstances | Where-Object -FilterScript {$_.SourceServerInstance -eq $SourceServerInstance})
 
@@ -93,6 +93,7 @@ function Sync-SchemaCompareObjectClass
         {
             throw "'SourceDatabase' is not a valid database on '$SourceServerInstance'"
         }
+        #>
 
         # Get object class query
         $ObjectClassQuery = Get-SchemaCompareObjectClassQuery -ServerInstance $ServerInstance -Database $Database -ObjectClassName $ObjectClassName -SourceInstance $SourceServerInstance -SourceDatabase $SourceDatabase

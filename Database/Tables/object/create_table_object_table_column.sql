@@ -2,8 +2,8 @@ DROP TABLE IF EXISTS [object].[table_column];
 
 CREATE TABLE [object].[table_column]
 (
-  [instance_id] INT NOT NULL
-, [database_id] INT NOT NULL
+  [schemacompare_source_database_id] INT NOT NULL
+, [schemacompare_source_instance_id] INT NOT NULL
 , [column_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [column_name] SYSNAME NOT NULL

@@ -426,14 +426,38 @@ function Get-SchemaCompareObjectClass
     Invoke-SqlCmd2 @ConnectionParams -Query $Query -As PSObject
 }
 
-function Get-SchemaCompareSourceInstance 
+function Get-SchemaCompareInstance 
 {
+    [CmdletBinding()]
+    param 
+    (
+        [Parameter(Mandatory=$True)]
+        [String] $ServerInstance 
+    ,
+        [Parameter(Mandatory=$True)]
+        [String] $Database 
+    )
 
+    $Query = "EXECUTE [config].[p_get_instance]"
+
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query
 }
 
-function Get-SchemaCompareSourceDatabase
+function Get-SchemaCompareDatabase
 {
+     [CmdletBinding()]
+    param 
+    (
+        [Parameter(Mandatory=$True)]
+        [String] $ServerInstance 
+    ,
+        [Parameter(Mandatory=$True)]
+        [String] $Database 
+    )
 
+    $Query = "EXECUTE [config].[p_get_database]"
+
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query
 }
 
 function Get-SchemaCompareObjectClassToSubobjectClass
@@ -568,6 +592,11 @@ function Get-SchemaCompareObjectClassObjectKey
                 "
 
     Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query
+}
+
+function Get-SchemaCompareStandardMetadataKey 
+{
+    
 }
 
 function Install-SchemaCompare
@@ -705,6 +734,10 @@ function Install-SchemaCompare
     Write-Verbose "Initializing ID generator..."
     Initialize-SchemaCompareIDGenerator -ServerInstance $ServerInstance -Database $Database 
     Write-Verbose "...ID generator initialized."
+
+    Write-Verbose "Initializing standard metadata keys..."
+    Initialize-SchemaCompareStandardMetadataKey -ServerInstance $ServerInstance -Database $Database -ConfigFilePath "$ModuleRoot\config\standard_metadata_key.xml"
+    Write-Verbose "...Standard metadata keys initialized"
 
     # Initialize the table that contains the classes of objects being considered in the comparisons (e.g. tables, procedures, table columns, procedure parameters)
     Write-Verbose "Initializing object class table..."

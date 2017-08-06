@@ -10,7 +10,7 @@
 
         <metadata_keys>
             <metadata_key>
-                <name> source_database_id </name>
+                <name> database_id </name>
                 <type> INT </type>
                 <column> {alias}.[database_id] </column>
             </metadata_key>
@@ -18,7 +18,7 @@
         
         <object_keys>
             <object_key>
-                <name> source_database_name </name>
+                <name> database_name </name>
                 <type> SYSNAME </type>
                 <column> {alias}.[name] </column>
             </object_key>
@@ -32,7 +32,17 @@
         <name> schema </name>
 
         <source>
-            {db}.sys.schemas AS {alias}
+            (
+                SELECT * 
+                FROM 
+                    {db}.sys.schemas AS S
+                CROSS APPLY 
+                    (
+                        SELECT [database_id]
+                        FROM master.sys.databases 
+                        WHERE [name] = '{db}'
+                    ) AS D
+            ) AS {alias}
         </source>
         <source_alias> S </source_alias>
         

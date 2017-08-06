@@ -17,6 +17,7 @@ BEGIN
 		[standard_metadata_key_id] INT NOT NULL PRIMARY KEY
 	,	[standard_metadata_key_name] SYSNAME NOT NULL
 	,	[standard_metadata_key_type] SYSNAME NOT NULL
+	,	[standard_metadata_key_precedence] INT NOT NULL
 	);
 
 	/*******************************************************************************
@@ -31,11 +32,13 @@ BEGIN
 			[standard_metadata_key_id]
 		,	[standard_metadata_key_name]
 		,	[standard_metadata_key_type]
+		,	[standard_metadata_key_precedence]
 		)
 		SELECT 
-			ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
+			ROW_NUMBER() OVER (ORDER BY (I.[standard_metadata_key_precedence]))
 		,	[standard_metadata_key_name]
 		,	[standard_metadata_key_type]
+		,	[standard_metadata_key_precedence]
 		FROM ', @as_input_table_name, N' AS I
 		;'
 	);
@@ -59,12 +62,14 @@ BEGIN
 	(
 		[standard_metadata_key_id]   
 	,	[standard_metadata_key_name] 
-	,	[standard_metadata_key_type] 
+	,	[standard_metadata_key_type]
+	,	[standard_metadata_key_precedence]
 	)
 	SELECT 
 		[standard_metadata_key_id]   
 	,	[standard_metadata_key_name] 
 	,	[standard_metadata_key_type] 
+	,	[standard_metadata_key_precedence]
 	FROM 
 		#standard_metadata_key
 	;
