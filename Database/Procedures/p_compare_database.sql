@@ -243,8 +243,8 @@ BEGIN TRY
 		(
 			SELECT 
 				OC.[object_class_id] 
-			,	MK.[metadata_key_column_name]
-			,	OK.[object_key_column_name]
+			,	QUOTENAME(MK.[metadata_key_column_name]) AS [metadata_key_column_name]
+			,	QUOTENAME(OK.[object_key_column_name]) AS [object_key_column_name]
 			FROM 
 				[config].object_class AS OC
 			INNER JOIN
@@ -254,12 +254,51 @@ BEGIN TRY
 				[config].[object_class_object_key] AS OK
 					ON OC.[object_class_id] = OK.[object_class_id]
 		)
-		, object_to_subobject_fields 
-		AS
+		, object_to_subobject_tables_and_keys AS
 		(
-			SELECT * 
+			SELECT 
+			-- parent
+				OCM.[object_class_id]
+			,	parent_object_class_table.schema_qualified_table_name AS [parent_schema_qualified_table_name]
+			,	parent_object_class_to_key.metadata_key_column_name AS [parent_metadata_key_column_name]
+			,	parent_object_class_to_key.object_key_column_name AS [parent_object_key_column_name]
+
+			-- child
+			,	OCM.[subobject_class_id]
+			,	child_object_class_table.schema_qualified_table_name AS [child_schema_qualified_table_name]
+			,	child_object_class_to_key.metadata_key_column_name AS [child_metadata_key_column_name]
+			,	child_object_class_to_key.object_key_column_name AS [child_object_key_column_name]
 			FROM object_class_mapping AS OCM
-			INNER JOIN object_class 
+			-- get tables
+			INNER JOIN object_class_to_table AS parent_object_class_table
+				ON OCM.[object_class_id] = parent_object_class_table.object_class_id
+			INNER JOIN object_class_to_table AS child_object_class_table
+				ON OCM.[subobject_class_id] = child_object_class_table.object_class_id
+			-- get keys
+			INNER JOIN object_class_to_key AS parent_object_class_to_key
+				ON OCM.[object_class_id] = parent_object_class_to_key.object_class_id
+			INNER JOIN object_class_to_key AS child_object_class_to_key
+				ON OCM.[subobject_class_id] = child_object_class_to_key.object_class_id
+		)
+		, object_to_subobject_key_query_unfiltered AS
+		(
+			SELECT 
+				O2SOTK.[object_class_id]
+			,	O2SOTK.[subobject_class_id] 
+			,	CONCAT 
+				(
+					N'SELECT ', @ls_newline
+				,	N'P.', O2SOTK.parent_metadata_key_column_name		, N' AS [parent_metadata_key]'					, @ls_newline
+				,	N'P.', O2SOTK.parent_object_key_column_name			, N' AS [parent_object_key]'					, @ls_newline
+				,	N'C.', O2SOTK.child_metadata_key_column_name		, N' AS [child_metadata_key]'					, @ls_newline 
+				,	N'C.', O2SOTK.child_object_key_column_name			, N' AS [child_object_key]'						, @ls_newline 
+				,	N'FROM ', O2SOTK.parent_schema_qualified_table_name			, N' AS P '								, @ls_newline 
+				,	N'INNER JOIN ', O2SOTK.child_schema_qualified_table_name	, N' AS C'								, @ls_newline
+				,	N'	ON P.', O2SOTK.parent_metadata_key_column_name, N' = C.', O2SOTK.parent_metadata_key_column_name, @ls_newline
+
+				)
+			FROM 
+				object_to_subobject_tables_and_keys AS O2SOTK
 		)
 
 		--, object_to_subobject_insert_statement AS
