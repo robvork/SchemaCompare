@@ -34,6 +34,8 @@ BEGIN TRY
 	DECLARE @ls_standard_metadata_key_name_instance SYSNAME;
 	DECLARE @ls_standard_metadata_key_name_database SYSNAME;
 
+	SET @ls_newline = NCHAR(13);
+
 	SET @li_instance_id_left = 
 	(
 		SELECT [instance_id] 
@@ -288,19 +290,43 @@ BEGIN TRY
 			,	CONCAT 
 				(
 					N'SELECT ', @ls_newline
-				,	N'P.', O2SOTK.parent_metadata_key_column_name		, N' AS [parent_metadata_key]'					, @ls_newline
-				,	N'P.', O2SOTK.parent_object_key_column_name			, N' AS [parent_object_key]'					, @ls_newline
-				,	N'C.', O2SOTK.child_metadata_key_column_name		, N' AS [child_metadata_key]'					, @ls_newline 
-				,	N'C.', O2SOTK.child_object_key_column_name			, N' AS [child_object_key]'						, @ls_newline 
+				,	N'  P.', O2SOTK.parent_metadata_key_column_name		, N' AS [parent_metadata_key]'					, @ls_newline
+				,	N', P.', O2SOTK.parent_object_key_column_name		, N' AS [parent_object_key]'					, @ls_newline
+				,	N', C.', O2SOTK.child_metadata_key_column_name		, N' AS [child_metadata_key]'					, @ls_newline 
+				,	N', C.', O2SOTK.child_object_key_column_name		, N' AS [child_object_key]'						, @ls_newline 
 				,	N'FROM ', O2SOTK.parent_schema_qualified_table_name			, N' AS P '								, @ls_newline 
 				,	N'INNER JOIN ', O2SOTK.child_schema_qualified_table_name	, N' AS C'								, @ls_newline
 				,	N'	ON P.', O2SOTK.parent_metadata_key_column_name, N' = C.', O2SOTK.parent_metadata_key_column_name, @ls_newline
-
-				)
+				) AS [query]
 			FROM 
 				object_to_subobject_tables_and_keys AS O2SOTK
 		)
-
+		, object_to_subobject_key_query_filtered AS 
+		(
+			SELECT 
+				O2SOTK.[object_class_id]
+			,	O2SOTK.[subobject_class_id]
+			,	CONCAT 
+				(
+					O2SOKQU.[query]
+				,	N'INNER JOIN #compare_staging AS CS', @ls_newline 
+				,	N'	ON P.', O2SOTK.[parent_metadata_key_column_name], N' = CS.[object_metadata_key]', @ls_newline 
+				,	N';'
+				) AS [query]
+			FROM 
+				object_to_subobject_tables_and_keys AS O2SOTK
+			INNER JOIN 
+				object_to_subobject_key_query_unfiltered AS O2SOKQU
+					ON O2SOTK.object_class_id = O2SOKQU.object_class_id
+			INNER JOIN 
+				#compare_staging AS CS
+					ON O2SOTK.object_class_id = CS.[object_class_id]
+		)
+		--, depth_link_query AS
+		--(
+		--)
+		SELECT * FROM object_to_subobject_key_query_filtered;
+		RETURN 0;
 		--, object_to_subobject_insert_statement AS
 		--(
 		--	SELECT 
@@ -312,23 +338,22 @@ BEGIN TRY
 			
 		--) 
 
-		INSERT INTO #compare_staging
-		(
-			[parent_object_class_id]
-		,	[parent_object_metadata_key]
-		,	[object_class_id]
-		,	[object_metadata_key]
-		,	[path] 
-		,	[depth] 
-		)
-		SELECT 
-			curr.[object_class_id]
-		,	curr.[object_metadata_key] 
-		,	OCM.[subobject_class_id]
-		,	SOMK.[object_metadata_key_name]
-		,	CONCAT(curr.path, N'/', SOT.SO.object_key)
-		,	curr.depth + 1 
-	END
+		--INSERT INTO #compare_staging
+		--(
+		--	[parent_object_class_id]
+		--,	[parent_object_metadata_key]
+		--,	[object_class_id]
+		--,	[object_metadata_key]
+		--,	[path] 
+		--,	[depth] 
+		--)
+		--SELECT 
+		--	curr.[object_class_id]
+		--,	curr.[object_metadata_key] 
+		--,	OCM.[subobject_class_id]
+		--,	SOMK.[object_metadata_key_name]
+		--,	CONCAT(curr.path, N'/', SOT.SO.object_key)
+		--,	curr.depth + 1 
 
 		-- for each row r at depth = @li_current_depth:
 		--		let c be the object class with object class id r.object_class_id
@@ -355,7 +380,6 @@ BEGIN TRY
 		--			AND 
 		--			r'.path = r.path
 		--		 set has_match = 0 if there is no such row
-		RETURN 0;
 	END;
 
 	-- after the loop has finished executing, #compare_staging can be decomposed as follows:
