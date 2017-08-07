@@ -2,8 +2,8 @@ DROP TABLE IF EXISTS [object].[table_column];
 
 CREATE TABLE [object].[table_column]
 (
-  [schemacompare_source_database_id] INT NOT NULL
-, [schemacompare_source_instance_id] INT NOT NULL
+  [schemacompare_source_instance_id] INT NOT NULL
+, [schemacompare_source_database_id] INT NOT NULL
 , [column_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [column_name] SYSNAME NOT NULL
@@ -41,9 +41,9 @@ CREATE TABLE [object].[table_column]
 , [xml_collection_id] INT NULL
 , CONSTRAINT pk_object_table_column PRIMARY KEY
 (
-  instance_id
-, database_id
-, object_id
-, column_id
+  [schemacompare_source_instance_id]
+, [schemacompare_source_database_id]
+, [object_id]
+, [column_id]
 )
 );

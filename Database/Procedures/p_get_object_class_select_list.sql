@@ -20,12 +20,33 @@ BEGIN TRY
 	DECLARE @ls_column_name SYSNAME;
 	DECLARE @ls_column_source SYSNAME;
 	DECLARE @ls_select_list NVARCHAR(MAX);
+	DECLARE @ls_standard_metadata_key_name_instance SYSNAME;
+	DECLARE @ls_standard_metadata_key_name_database SYSNAME;
 
 	DECLARE @li_error_severity INT;
 	DECLARE @li_error_state INT;  
 
 	SET @ls_newline = NCHAR(13); 
 	SET @ls_single_quote = N'''';
+
+	SET @ls_standard_metadata_key_name_instance = 
+	(
+		SELECT 
+			[standard_metadata_key_name] 
+		FROM 
+			[config].[standard_metadata_key]
+		WHERE 
+			[standard_metadata_key_name] LIKE N'%instance%'
+	);
+	SET @ls_standard_metadata_key_name_database = 
+	(
+		SELECT 
+			[standard_metadata_key_name] 
+		FROM 
+			[config].[standard_metadata_key]
+		WHERE 
+			[standard_metadata_key_name] LIKE N'%database%'
+	);
 
 	-- Validate/Set Object Class in [config].[object_class]
 	BEGIN
@@ -86,22 +107,22 @@ BEGIN TRY
 		FROM 
 		(
 			VALUES 
-			('instance_id', '{instance_id}')
-		,	('database_id', '{database_id}')
+			(QUOTENAME(@ls_standard_metadata_key_name_instance), CONCAT(N'{', @ls_standard_metadata_key_name_instance, N'}'))
+		,	(QUOTENAME(@ls_standard_metadata_key_name_database), CONCAT(N'{', @ls_standard_metadata_key_name_database, N'}'))
 		) AS standard_metadata_keys([metadata_key_column_name], [metadata_key_column_source])
 
 		UNION ALL 
 
-		SELECT [metadata_key_column_name] 
-		,	   [metadata_key_column_source] 
+		SELECT QUOTENAME([metadata_key_column_name])
+		,	   [metadata_key_column_source]
 		FROM [config].[object_class_metadata_key] 
 		WHERE [object_class_id] = @ai_object_class_id
-			  AND [metadata_key_column_name] NOT IN (N'instance_id', N'database_id')
+			  --AND [metadata_key_column_name] NOT IN (N'instance_id', N'database_id')
 	);
 
 	DECLARE object_key_cursor CURSOR LOCAL FAST_FORWARD FOR
 	(
-		SELECT [object_key_column_name]
+		SELECT QUOTENAME([object_key_column_name])
 		,	   [object_key_column_source]
 		FROM [config].[object_class_object_key]
 		WHERE [object_class_id] = @ai_object_class_id
@@ -257,10 +278,12 @@ GO
 --DECLARE @ls_select_list NVARCHAR(MAX);
 
 --EXEC [config].[p_get_object_class_select_list]
---	--@as_object_class_name = N'view_column'
+--	@as_object_class_name = N'database'
 --,	@as_select_list = @ls_select_list OUTPUT
 --,	@ai_debug_level = 0
 --;
+
+--PRINT @ls_select_list
 
 --SET @ls_select_list = REPLACE(@ls_select_list, '{instance_id}', 1);
 --SET @ls_select_list = REPLACE(@ls_select_list, '{database_id}', 2);

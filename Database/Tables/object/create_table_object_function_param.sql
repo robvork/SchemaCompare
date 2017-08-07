@@ -2,8 +2,8 @@ DROP TABLE IF EXISTS [object].[function_param];
 
 CREATE TABLE [object].[function_param]
 (
-  [schemacompare_source_database_id] INT NOT NULL
-, [schemacompare_source_instance_id] INT NOT NULL
+  [schemacompare_source_instance_id] INT NOT NULL
+, [schemacompare_source_database_id] INT NOT NULL
 , [parameter_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [parameter_name] SYSNAME NOT NULL
@@ -28,9 +28,9 @@ CREATE TABLE [object].[function_param]
 , [xml_collection_id] INT NULL
 , CONSTRAINT pk_object_function_param PRIMARY KEY
 (
-  instance_id
-, database_id
-, object_id
-, parameter_id
+  [schemacompare_source_instance_id]
+, [schemacompare_source_database_id]
+, [object_id]
+, [parameter_id]
 )
 );

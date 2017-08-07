@@ -127,6 +127,18 @@ BEGIN
 				ON C.[user_type_id] = T.[user_type_id]
 		;
 
+		IF EXISTS 
+		(
+			SELECT * 
+			FROM #view_column AS VC
+			WHERE VC.[view_column_name] IN 
+			(
+				SELECT [standard_metadata_key_name] 
+				FROM [config].[standard_metadata_key]
+			)
+		)
+			RAISERROR(N'The standard metadata keys and view columns have a name clash', 16, 1);
+
 		IF @ai_debug_level > 1
 		BEGIN
 			SELECT '#view_property';

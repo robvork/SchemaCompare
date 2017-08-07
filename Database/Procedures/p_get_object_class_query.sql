@@ -20,6 +20,8 @@ BEGIN TRY
 	DECLARE @ls_select_list NVARCHAR(MAX);
 	DECLARE @ls_object_class_source NVARCHAR(MAX);
 	DECLARE @ls_object_class_source_alias SYSNAME;
+	DECLARE @ls_standard_metadata_key_name_instance SYSNAME;
+	DECLARE @ls_standard_metadata_key_name_database SYSNAME;
 
 	DECLARE @li_object_class_id SYSNAME;
 	DECLARE @li_error_severity INT;
@@ -28,6 +30,25 @@ BEGIN TRY
 	DECLARE @li_database_id INT;
 
 	SET @ls_newline = NCHAR(13); 
+
+	SET @ls_standard_metadata_key_name_instance = 
+	(
+		SELECT 
+			[standard_metadata_key_name] 
+		FROM 
+			[config].[standard_metadata_key]
+		WHERE 
+			[standard_metadata_key_name] LIKE N'%instance%'
+	);
+	SET @ls_standard_metadata_key_name_database = 
+	(
+		SELECT 
+			[standard_metadata_key_name] 
+		FROM 
+			[config].[standard_metadata_key]
+		WHERE 
+			[standard_metadata_key_name] LIKE N'%database%'
+	);
 
 	DROP TABLE IF EXISTS #object_class_scope;
 
@@ -167,8 +188,8 @@ BEGIN TRY
 		IF @ai_debug_level > 0
 			PRINT CONCAT(N'Object class ', @li_object_class_id, N' select list:', @ls_newline, @ls_select_list);
 
-		SET @ls_select_list = REPLACE(@ls_select_list, N'{instance_id}', @li_instance_id);
-		SET @ls_select_list = REPLACE(@ls_select_list, N'{database_id}', @li_database_id);
+		SET @ls_select_list = REPLACE(@ls_select_list, CONCAT(N'{', @ls_standard_metadata_key_name_instance, N'}'), @li_instance_id);
+		SET @ls_select_list = REPLACE(@ls_select_list, CONCAT(N'{', @ls_standard_metadata_key_name_database, N'}'), @li_database_id);
 		SET @ls_select_list = REPLACE(@ls_select_list, N'{alias}', @ls_object_class_source_alias);
 
 		SET @ls_object_class_source = REPLACE(@ls_object_class_source, N'{alias}', @ls_object_class_source_alias);

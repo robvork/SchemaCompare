@@ -2,8 +2,8 @@ DROP TABLE IF EXISTS [object].[table];
 
 CREATE TABLE [object].[table]
 (
-  [schemacompare_source_database_id] INT NOT NULL
-, [schemacompare_source_instance_id] INT NOT NULL
+  [schemacompare_source_instance_id] INT NOT NULL
+, [schemacompare_source_database_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [schema_id] INT NOT NULL
 , [table_name] SYSNAME NOT NULL
@@ -43,9 +43,9 @@ CREATE TABLE [object].[table]
 , [uses_ansi_nulls] BIT NULL
 , CONSTRAINT pk_object_table PRIMARY KEY
 (
-  instance_id
-, database_id
-, schema_id
-, object_id
+  [schemacompare_source_instance_id]
+, [schemacompare_source_database_id]
+, [schema_id]
+, [object_id]
 )
 );

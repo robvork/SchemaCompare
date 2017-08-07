@@ -119,6 +119,8 @@ BEGIN TRY
 	DECLARE @ls_object_class_table_name SYSNAME;
 	DECLARE @ls_object_class_source NVARCHAR(MAX);
 	DECLARE @ls_object_class_source_alias NVARCHAR(10);
+	DECLARE @ls_standard_metadata_key_name_instance SYSNAME;
+	DECLARE @ls_standard_metadata_key_name_database SYSNAME;
 	
 	DECLARE @ls_sql_merge_update_set_statements NVARCHAR(MAX);
 	DECLARE @ls_sql_merge_insert_target_header NVARCHAR(MAX);
@@ -147,6 +149,26 @@ BEGIN TRY
 	SET @li_error_state = 1;
 	SET @ls_single_quote = N'''';
 	SET @ls_comma = N',';
+	SET @ls_standard_metadata_key_name_instance = 
+	(
+		SELECT 
+			[standard_metadata_key_name] 
+		FROM 
+			[config].[standard_metadata_key]
+		WHERE 
+			[standard_metadata_key_name] LIKE N'%instance%'
+	);
+	SET @ls_standard_metadata_key_name_database = 
+	(
+		SELECT 
+			[standard_metadata_key_name] 
+		FROM 
+			[config].[standard_metadata_key]
+		WHERE 
+			[standard_metadata_key_name] LIKE N'%database%'
+	);
+
+
 	END;
 
 	-- Declare temp tables
@@ -349,7 +371,7 @@ BEGIN TRY
 	WHERE 
 		[object_class_id] = @ai_object_class_id
 		AND
-		[object_class_property_name] NOT IN ('database_id', 'instance_id')
+		[object_class_property_name] NOT IN (@ls_standard_metadata_key_name_instance, @ls_standard_metadata_key_name_database)
 		AND
 		[object_class_property_is_enabled] = 1
 	;
@@ -389,7 +411,8 @@ BEGIN TRY
 		(
 			SELECT * 
 			FROM [', @ls_object_class_table_schema_name, N'].[', @ls_object_class_table_name, N'] 
-			WHERE [instance_id] = ', @ai_instance_id, N' AND [database_id] = ', @ai_database_id, N'
+			WHERE', QUOTENAME(@ls_standard_metadata_key_name_instance), N' = ', @ai_instance_id
+			, N' AND ', QUOTENAME(@ls_standard_metadata_key_name_database), N' = ', @ai_database_id, N'
 		)
 		MERGE INTO target_rows AS TGT'
 	) 
@@ -561,9 +584,9 @@ BEGIN TRY
 		N'('
 		-- extract the substring starting at the character after the first occurrence of ','
 		-- this omits the first comma and space
-	,	N'instance_id' 
+	,	@ls_standard_metadata_key_name_instance
 	,	N','
-	,	N'database_id'
+	,	@ls_standard_metadata_key_name_database
 	,	N','
 	,	CAST(SUBSTRING
 		(

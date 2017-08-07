@@ -2,8 +2,8 @@ DROP TABLE IF EXISTS [object].[function];
 
 CREATE TABLE [object].[function]
 (
-  [schemacompare_source_database_id] INT NOT NULL
-, [schemacompare_source_instance_id] INT NOT NULL
+  [schemacompare_source_instance_id] INT NOT NULL
+, [schemacompare_source_database_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [schema_id] INT NOT NULL
 , [function_name] SYSNAME NOT NULL
@@ -19,9 +19,9 @@ CREATE TABLE [object].[function]
 , [type_desc] NVARCHAR(60) NULL
 , CONSTRAINT pk_object_function PRIMARY KEY
 (
-  instance_id
-, database_id
-, schema_id
-, object_id
+  [schemacompare_source_instance_id]
+, [schemacompare_source_database_id]
+, [schema_id]
+, [object_id]
 )
 );

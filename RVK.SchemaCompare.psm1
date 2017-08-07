@@ -596,7 +596,16 @@ function Get-SchemaCompareObjectClassObjectKey
 
 function Get-SchemaCompareStandardMetadataKey 
 {
-    
+    [CmdletBinding()]
+    param 
+    (
+        [String] $ServerInstance 
+    ,   
+        [String] $Database 
+    )
+
+    $Query = "EXECUTE [config].[p_get_standard_metadata_key]"
+    Invoke-Sqlcmd2 -ServerInstance $ServerInstance -Database $Database -Query $Query 
 }
 
 function Install-SchemaCompare

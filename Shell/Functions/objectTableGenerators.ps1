@@ -80,7 +80,8 @@ function Get-SchemaCompareObjectClassTableSQL
     $ColumnSQL[0] = "  " + $ColumnSQL[0]
     $ColumnSQL = $ColumnSQL -join "`n, "
 
-    $MetadataKeys = Get-SchemaCompareObjectClassMetadataKey -ServerInstance $ServerInstance -Database $Database -ObjectClassName $Name 
+    $StandardMetadataKeys = Get-SchemaCompareStandardMetadataKey -ServerInstance $ServerInstance -Database $Database
+    $CustomMetadataKeys = Get-SchemaCompareObjectClassMetadataKey -ServerInstance $ServerInstance -Database $Database -ObjectClassName $Name 
 
     # Put all objects into an [object] schema table bearing the object class name
     $TableSQL = @(
@@ -91,13 +92,22 @@ function Get-SchemaCompareObjectClassTableSQL
                         $ColumnSQL
                         ", CONSTRAINT pk_object_${Name} PRIMARY KEY"
                         "("
-                            @((" " * 2) + "instance_id"
-                              "database_id"
-                              ($MetadataKeys | 
-                               Where-Object {$_.metadata_key_column_name -notin @("instance_id", "database_id")} | 
-                               Sort-Object is_parent_metadata_key -Descending | 
-                               Select-Object -ExpandProperty metadata_key_column_name)
-                             ) -join "`n, "
+                            " " * (", ").Length + (
+                                @(
+                                    (
+                                            $StandardMetadataKeys | 
+                                            Sort-Object standard_metadata_key_precedence | 
+                                            Select-Object -ExpandProperty standard_metadata_key_name | 
+                                            ForEach-Object {"[" + $_ + "]"}
+                                    )
+                                    (
+                                            $CustomMetadataKeys | 
+                                            Sort-Object is_parent_metadata_key -Descending | 
+                                            Select-Object -ExpandProperty metadata_key_column_name | 
+                                            ForEach-Object {"[" + $_ + "]"}
+                                    )
+                                ) -join "`n, "
+                            )
                         ")" 
                     ");"
                  ) -join "`n"

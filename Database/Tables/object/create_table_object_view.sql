@@ -2,8 +2,8 @@ DROP TABLE IF EXISTS [object].[view];
 
 CREATE TABLE [object].[view]
 (
-  [schemacompare_source_database_id] INT NOT NULL
-, [schemacompare_source_instance_id] INT NOT NULL
+  [schemacompare_source_instance_id] INT NOT NULL
+, [schemacompare_source_database_id] INT NOT NULL
 , [object_id] INT NOT NULL
 , [schema_id] INT NOT NULL
 , [view_name] SYSNAME NOT NULL
@@ -26,9 +26,9 @@ CREATE TABLE [object].[view]
 , [with_check_option] BIT NULL
 , CONSTRAINT pk_object_view PRIMARY KEY
 (
-  instance_id
-, database_id
-, schema_id
-, object_id
+  [schemacompare_source_instance_id]
+, [schemacompare_source_database_id]
+, [schema_id]
+, [object_id]
 )
 );
