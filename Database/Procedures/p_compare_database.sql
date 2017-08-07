@@ -210,6 +210,87 @@ BEGIN TRY
 	SET @li_current_depth = 0;
 	WHILE @li_current_depth < @ai_depth
 	BEGIN
+		WITH rows_at_current_depth AS
+		(
+			SELECT * 
+			FROM #compare_staging
+			WHERE [depth] = @li_current_depth
+		)
+		, object_classes_at_current_depth AS
+		(
+			SELECT DISTINCT [object_class_id] 
+			FROM rows_at_current_depth
+		)
+		, object_class_mapping AS
+		(
+			SELECT 
+				OCCD.[object_class_id]
+			,	O2SO.[subobject_class_id]
+			FROM 
+				object_classes_at_current_depth AS OCCD
+			INNER JOIN 
+				[config].[object_to_subobject] AS O2SO
+					ON OCCD.object_class_id = O2SO.object_class_id
+		)
+		, object_class_to_table AS
+		(
+			SELECT 
+				OC.[object_class_id]
+			,	CONCAT(QUOTENAME(OC.[table_schema_name]), '.', QUOTENAME(OC.[table_name])) AS schema_qualified_table_name
+			FROM [config].[object_class] AS OC
+		)
+		, object_class_to_key AS
+		(
+			SELECT 
+				OC.[object_class_id] 
+			,	MK.[metadata_key_column_name]
+			,	OK.[object_key_column_name]
+			FROM 
+				[config].object_class AS OC
+			INNER JOIN
+				[config].[object_class_metadata_key] AS MK
+					ON OC.[object_class_id] = MK.[object_class_id] AND MK.is_parent_metadata_key = 0
+			INNER JOIN 
+				[config].[object_class_object_key] AS OK
+					ON OC.[object_class_id] = OK.[object_class_id]
+		)
+		, object_to_subobject_fields 
+		AS
+		(
+			SELECT * 
+			FROM object_class_mapping AS OCM
+			INNER JOIN object_class 
+		)
+
+		--, object_to_subobject_insert_statement AS
+		--(
+		--	SELECT 
+		--		OCM.[object_class_id] 
+		--	,	OCM.[subobject_class_id] 
+		--	,	
+				
+		--	FROM object_class_mapping AS OCM 
+			
+		--) 
+
+		INSERT INTO #compare_staging
+		(
+			[parent_object_class_id]
+		,	[parent_object_metadata_key]
+		,	[object_class_id]
+		,	[object_metadata_key]
+		,	[path] 
+		,	[depth] 
+		)
+		SELECT 
+			curr.[object_class_id]
+		,	curr.[object_metadata_key] 
+		,	OCM.[subobject_class_id]
+		,	SOMK.[object_metadata_key_name]
+		,	CONCAT(curr.path, N'/', SOT.SO.object_key)
+		,	curr.depth + 1 
+	END
+
 		-- for each row r at depth = @li_current_depth:
 		--		let c be the object class with object class id r.object_class_id
 		--		join c to its subobject classes sc in [config].[object_to_subobject]
