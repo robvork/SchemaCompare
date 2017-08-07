@@ -107,16 +107,16 @@ BEGIN TRY
 	,	[parent_object_metadata_key] INT NULL
 	,	[object_class_id] INT NOT NULL
 	,	[object_metadata_key] INT NOT NULL
-	,	[path] NVARCHAR(MAX) NOT NULL
+	,	[path] NVARCHAR(2000) NOT NULL
 	,	[depth] INT NOT NULL
 	,	[has_match] BIT NULL
-	--,	CONSTRAINT pk_compare_staging 
-	--	PRIMARY KEY 
-	--	(
-	--		[instance_id]
-	--	,	[database_id]
-	--	,	[path]
-	--	)
+	,	CONSTRAINT pk_compare_staging 
+		PRIMARY KEY 
+		(
+			[schemacompare_source_instance_id]
+		,	[schemacompare_source_database_id]
+		,	[path]
+		)
 	);
 
 	CREATE TABLE #object_linking_query
@@ -226,7 +226,79 @@ BEGIN TRY
 		--					object_metadata_key = r'.object_metadata_key
 		--					depth = r.depth + 1
 		--					path = r.path + "/" + r'.object_key
+
+		-- for each row r at depth = @li_current_depth:
+		-- update has_match as follows:
+		--	  if r.sc_source_instance_id = left source instance and r.sc_source_db_id = left db
+		--		 set has_match = 1 if there is a row r' with 
+		--			r'.sc_source_instance_id = right source instance and r'.sc_source_db_id = right source instance
+		--			AND 
+		--			r'.path = r.path
+		--		 set has_match = 0 if there is no such row
+		RETURN 0;
 	END;
+
+	-- after the loop has finished executing, #compare_staging can be decomposed as follows:
+	--	#compare_staging = R_left 
+	--					   UNION 
+	--					   R_common 
+	--					   UNION 
+	--					   R_right
+	-- Where R_left   is the set of rows with has_match = 0 and (sc_source_instance, sc_source_db) = (left_inst, left_db)
+	--		 R_right  is the set of rows with has_match = 0 and (sc_source_instance, sc_source_db) = (right_inst, right_db)
+	--		 R_common is the set of rows with has_match = 1
+	-- For each r_l in R_left
+	--	  let c be the object class of r_l
+	--	  let D be the schema-qualified diff table of c
+	--	  output to D a row with metadata key = r_l.metadata_key
+	--							 side_indicator "<"
+	--							 has_match = 0
+	--							 left standard key = left key
+	--							 right standard key = right key
+	--							 diff_column = NULL
+	--							 diff_value = NULL
+	-- Similarly, 
+	-- For each r_r in R_right
+	--	  let c be the object class of r_l
+	--	  let D be the schema-qualified diff table of c
+	--	  output to D a row with metadata key = r_r.metadata_key
+	--							 side_indicator ">"
+	--							 has_match = 0
+	--							 left standard key = left key
+	--							 right standard key = right key
+	--							 diff_column = NULL
+	--							 diff_value = NULL
+	-- Given R_common, determine a derived set R_common_pairs = {(r_left, r_right) : r_left in R_common and r_right in R_common and 
+	--															  r_left.path = r_right.path
+	--															}
+	-- For each pair (r_l, r_r) in R_common_pairs
+	--	  since there is a path match, the object in each part of the match belongs to some single object class c
+	--	  let D be the schema-qualified diff table of c
+	--	  let P be the set of enabled non-key rows of c
+	--	  let val_l be the values of P for the object of object class r_l.object_class and with r_l's metadata key
+	--		 unpivoted to the form (<key>, <val>), where <key> is in P and <val> is the val of <key> for the object
+	--	  let val_r be the values of P for the object of object class r_r.object_class and with r_r's metadata key
+	--		 unpivoted to the form (<key>, <val>), where <key> is in P and <val> is the val of <key> for the object
+	--	  let val_diff_l be the the set {(<key>, <val_l>) : (<key>, <val_l>) is in val_l and (<key>, <val_r>) is in val_r
+	--									 and <val_l> != <val_r>
+	--									}
+	--	  let val_diff_r be the set {(<key>, <val_r>) : (<key>, <val_r>) is in val_r and (<key>, <val_l>) is in val_l
+	--									 and <val_l> != <val_r>
+	--									}
+	--	  insert into D rows with metadata key val_l.key
+	--										   side_indicator "<"
+	--										   left standard key = left key
+	--										   right standard key = right key
+	--										   diff_column = <key>
+	--										   diff_value = <val>
+	--	  Similarly
+	--	  insert into D rows with metadata key val_r.key
+	--										   side_indicator ">"
+	--										   left standard key = left key
+	--										   right standard key = right key
+	--										   diff_column = <key>
+	--										   diff_value = <val>
+
 
 
 
